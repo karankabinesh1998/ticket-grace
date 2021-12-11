@@ -1,0 +1,16 @@
+.Sidenav {
+  margin-left: 9px;
+}
+
+span {
+  color: black !important;
+}
+
+
+#anchorid {
+  color: black;
+}
+
+.invalid-feedback {
+  display: block !important;
+}

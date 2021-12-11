@@ -1,0 +1,54 @@
+.ReactTable {
+  color: black !important;
+}
+
+.labell {
+  color: black;
+}
+
+.labell2 {
+  color: #000000d1;
+  font-size: 17px;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+#spanid {
+  color: red !important;
+}
+
+.card-body {
+  background: #d3d3d35e !important;
+}
+
+.header {
+  color: black;
+  font-weight: 500;
+}
+
+.errormsg {
+  color: red !important;
+}
+
+/* .w-90 {
+  width: 91% !important;
+}
+.W-99 {
+  width: 99% !important;
+} */
+
+
+.BackRow{
+  background-color: burlywood;
+  
+}
+
+.LabelHead{
+  font-weight: 700;
+}
+
+
+.NewContent{
+  padding-left: 30px;
+  padding-top: 30px;
+}
