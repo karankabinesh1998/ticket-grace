@@ -68,6 +68,7 @@ export default class SideNavBar extends Component {
                     Tickets </span></a>
                 <ul class="dropdown-menu">
                   <li><a class="nav-link" href="/ticket">Add tickets</a></li>
+                  <li><a class="nav-link" href="/assign-ticket-labour">Assign tickets</a></li>
                 </ul>
               </li>
             </ul>

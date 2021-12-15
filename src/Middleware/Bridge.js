@@ -199,6 +199,38 @@ const deleteWorker = async (formdata) => {
     data:formdata
   });
   return result;
+};
+
+///tickets
+
+const addTicket = async (formdata) => {
+  const result = await http.post(ACCESS_POINT + `/ticket`, formdata, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+      'Authorization': Authorization
+    },
+  });
+  return result;
+}
+
+const getTicket = async () => {
+  const result = await http.get(ACCESS_POINT + `/ticket`, {
+    headers: {
+      'Authorization': Authorization
+    },
+  });
+  return result;
+}
+
+const deleteTicket = async (formdata) => {
+  const result = await http.delete(ACCESS_POINT + `/ticket/${formdata._id}`,{
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': Authorization
+    },
+    data:formdata
+  });
+  return result;
 }
 
 export default {
@@ -220,5 +252,8 @@ export default {
   addWorker,
   editWorker,
   getWorker,
-  deleteWorker
+  deleteWorker,
+  addTicket,
+  getTicket,
+  deleteTicket
 }

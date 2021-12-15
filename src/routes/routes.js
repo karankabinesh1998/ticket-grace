@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Route } from 'react-router-dom';
 import Admin from '../Screens/Admin/Admin';
+import ForgotPassword from '../Screens/Auth/ForgotPassword';
 import UserLogin from '../Screens/Auth/UserLogin';
 import Dashboard from '../Screens/Dashboard/Dashboard';
 import Departments from '../Screens/Departments/Departments';
@@ -9,6 +10,7 @@ import Profile from '../Screens/Profile/Profile';
 import SideNavBar from '../Screens/SideNav/SideNavBar';
 import Store from '../Screens/Store/Store';
 import StoreManager from '../Screens/StoreManager/StoreManager';
+import AssignTicket from '../Screens/Ticket/AssignTicket';
 import Ticket from '../Screens/Ticket/Ticket';
 import Vendor from '../Screens/Vendor/Vendor';
 import Worker from '../Screens/Worker/Worker';
@@ -164,6 +166,23 @@ export default function Routes() {
       />
       <Route
         exact
+        path={'/assign-ticket-labour'}
+        render={(props) => (
+          <React.Fragment>
+            <div id="app">
+              <div class="main-wrapper main-wrapper-1">
+                <Header {...props} />
+                <SideNavBar {...props} />
+                <div className="app-body">
+                <AssignTicket {...props} />
+                </div>
+              </div>
+            </div>
+          </React.Fragment>
+        )}
+      />
+      <Route
+        exact
         path={'/profile'}
         render={(props) => (
           <React.Fragment>
@@ -173,6 +192,23 @@ export default function Routes() {
                 <SideNavBar {...props} />
                 <div className="app-body">
                 <Profile {...props} />
+                </div>
+              </div>
+            </div>
+          </React.Fragment>
+        )}
+      />
+      <Route
+        exact
+        path={'/forgot-password'}
+        render={(props) => (
+          <React.Fragment>
+            <div id="app">
+              <div class="main-wrapper main-wrapper-1">
+                <Header {...props} />
+                <SideNavBar {...props} />
+                <div className="app-body">
+                <ForgotPassword {...props} />
                 </div>
               </div>
             </div>
