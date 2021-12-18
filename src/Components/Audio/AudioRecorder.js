@@ -8,20 +8,19 @@ export default class AudioRecorder extends Component {
         super(props);
         this.state = {
             isRecording: false,
-            blobURL: '',
             isBlocked: false,
-            buttonName:'Tap to speak'
+            buttonName:'Tap to speak',
         }
     }
 
     async componentDidMount() {
         navigator.getUserMedia({ audio: true },
             () => {
-                console.log('Permission Granted');
+                // console.log('Permission Granted');
                 this.setState({ isBlocked: false });
             },
             () => {
-                console.log('Permission Denied');
+                // console.log('Permission Denied');
                 this.setState({ isBlocked: true })
             },
         );
@@ -29,7 +28,7 @@ export default class AudioRecorder extends Component {
 
     start = () => {
         if (this.state.isBlocked) {
-            console.log('Permission Denied');
+            // console.log('Permission Denied');
         } else {
             Mp3Recorder
                 .start()
@@ -49,6 +48,12 @@ export default class AudioRecorder extends Component {
                 this.props.handleAudioFile(blob)
             }).catch((e) => console.log(e));
     };
+
+    // UNSAFE_componentWillReceiveProps(props){
+    //     this.setState({
+    //         blobURL:props?.audioFile
+    //     })
+    // }
 
     render() {
         const { buttonName } = this.state;

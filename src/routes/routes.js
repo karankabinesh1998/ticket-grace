@@ -14,6 +14,10 @@ import AssignTicket from '../Screens/Ticket/AssignTicket';
 import Ticket from '../Screens/Ticket/Ticket';
 import Vendor from '../Screens/Vendor/Vendor';
 import Worker from '../Screens/Worker/Worker';
+import ViewTicket from '../Screens/Ticket/ViewTicket';
+import TicketHistory from '../Screens/Ticket/TicketHistory';
+import Evaluation from '../Screens/Evaluation/Evaluation';
+import EvaluationHistory from '../Screens/Evaluation/EvaluationHistory';
 
 
 export default function Routes() {
@@ -209,6 +213,77 @@ export default function Routes() {
                 <SideNavBar {...props} />
                 <div className="app-body">
                 <ForgotPassword {...props} />
+                </div>
+              </div>
+            </div>
+          </React.Fragment>
+        )}
+      />
+
+      <Route
+        exact
+        path={'/view-tickets'}
+        render={(props) => (
+          <React.Fragment>
+            <div id="app">
+              <div class="main-wrapper main-wrapper-1">
+                <Header {...props} />
+                <SideNavBar {...props} />
+                <div className="app-body">
+                  <ViewTicket {...props} />
+                </div>
+              </div>
+            </div>
+          </React.Fragment>
+        )}
+      />
+
+      <Route
+        exact
+        path={'/tickets-history'}
+        render={(props) => (
+          <React.Fragment>
+            <div id="app">
+              <div class="main-wrapper main-wrapper-1">
+                <Header {...props} />
+                <SideNavBar {...props} />
+                <div className="app-body">
+                  <TicketHistory {...props} />
+                </div>
+              </div>
+            </div>
+          </React.Fragment>
+        )}
+      />
+
+      <Route
+        exact
+        path={'/performance-evaluation'}
+        render={(props) => (
+          <React.Fragment>
+            <div id="app">
+              <div class="main-wrapper main-wrapper-1">
+                <Header {...props} />
+                <SideNavBar {...props} />
+                <div className="app-body">
+                  <Evaluation {...props} />
+                </div>
+              </div>
+            </div>
+          </React.Fragment>
+        )}
+      />
+      <Route
+        exact
+        path={'/performance-evaluation-history'}
+        render={(props) => (
+          <React.Fragment>
+            <div id="app">
+              <div class="main-wrapper main-wrapper-1">
+                <Header {...props} />
+                <SideNavBar {...props} />
+                <div className="app-body">
+                  <EvaluationHistory {...props} />
                 </div>
               </div>
             </div>

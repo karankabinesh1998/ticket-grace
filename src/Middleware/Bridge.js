@@ -1,7 +1,7 @@
 import { ACCESS_POINT } from '../config';
 import http from "./http";
 const Authorization = localStorage.getItem('token');
-const roles = localStorage.getItem('roles') !== null ? JSON.parse(localStorage.getItem('roles')) : null
+const roles = localStorage.getItem('roles') !== null ? JSON.parse(localStorage.getItem('roles')) : null;
 
 ///User
 
@@ -64,10 +64,30 @@ const deleteUser = async (formdata) => {
   return result;
 }
 
-const getUserData = async (roleId) => {
-  const result = await http.get(ACCESS_POINT + `/user?=${roleId}`, {
+const getUserData = async (roleId='') => {
+  const result = await http.get(ACCESS_POINT + `/user${roleId}`, {
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': Authorization
+    },
+  });
+  return result;
+};
+
+const getProfile = async () => {
+  const result = await http.get(ACCESS_POINT + `/user/profile`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': Authorization
+    },
+  });
+  return result;
+};
+
+const updateProfile = async (formdata) => {
+  const result = await http.patch(ACCESS_POINT + `/user/profile`, formdata, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
       'Authorization': Authorization
     },
   });
@@ -161,8 +181,8 @@ const deleteStore = async (formdata) => {
 
 ////Worker
 
-const getWorker = async () => {
-  const result = await http.get(ACCESS_POINT + `/user/worker`, {
+const getWorker = async (query=null) => {
+  const result = await http.get(ACCESS_POINT + `/user/worker${query?query:''}`, {
     headers: {
       'Authorization': Authorization
     },
@@ -213,8 +233,38 @@ const addTicket = async (formdata) => {
   return result;
 }
 
-const getTicket = async () => {
-  const result = await http.get(ACCESS_POINT + `/ticket`, {
+const assignTicket = async (formdata) => {
+  const result = await http.post(ACCESS_POINT + `/ticket/assign`, formdata, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': Authorization
+    },
+  });
+  return result;
+};
+
+const cancelAssignTicket = async (formdata) => {
+  const result = await http.post(ACCESS_POINT + `/ticket/re-open`, formdata, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': Authorization
+    },
+  });
+  return result;
+};
+
+const closeAssignTicket = async (formdata) => {
+  const result = await http.post(ACCESS_POINT + `/ticket/close`, formdata, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': Authorization
+    },
+  });
+  return result;
+};
+
+const getTicket = async (query=null) => {
+  const result = await http.get(ACCESS_POINT + `/ticket${query ? query : '' }`, {
     headers: {
       'Authorization': Authorization
     },
@@ -231,7 +281,28 @@ const deleteTicket = async (formdata) => {
     data:formdata
   });
   return result;
-}
+};
+
+///// performance
+const getEvaluation = async (query=null) => {
+  const result = await http.get(ACCESS_POINT + `/ticket/evaluation`, {
+    headers: {
+      'Authorization': Authorization
+    },
+  });
+  return result;
+};
+
+const postEvaluation = async (formdata) => {
+  const result = await http.post(ACCESS_POINT + `/ticket/evaluation`, formdata, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': Authorization
+    },
+  });
+  return result;
+};
+
 
 export default {
   userLogin,
@@ -255,5 +326,12 @@ export default {
   deleteWorker,
   addTicket,
   getTicket,
-  deleteTicket
+  deleteTicket,
+  assignTicket,
+  cancelAssignTicket,
+  closeAssignTicket,
+  getEvaluation,
+  postEvaluation,
+  getProfile,
+  updateProfile
 }

@@ -20,6 +20,9 @@ export default class Vendor extends Component {
       adminData: [],
       adminButtonState: true,
       selectedDepartment: {},
+      selectedStore:{},
+      phoneNumber:null,
+      storeList:[],
       editId: null,
       index: null,
       column: [
@@ -28,8 +31,17 @@ export default class Vendor extends Component {
           accessor: "firstName"
         },
         {
+          Header: "Mobile",
+          accessor: "phoneNumber"
+        },
+        {
           Header: "Email",
           accessor: "email"
+        },
+        {
+          Header: "Store",
+          accessor: "store",
+          Cell: (d) => <p>{d.original?.store?.name}</p>
         },
         {
           Header: "Department",
@@ -51,7 +63,7 @@ export default class Vendor extends Component {
   }
 
   viewDepartment = (d) => {
-    return d.original.department.name
+    return d.original?.department?.name
   }
 
   editAdminUser = (d) => {
@@ -73,7 +85,8 @@ export default class Vendor extends Component {
 
   editionAdmin = async (d) => {
     let value = d.original;
-    let selectedDepartment = { value: value.department._id, label: value.department.name };
+    let selectedDepartment = { value: value?.department._id, label: value?.department?.name };
+    let selectedStore = { value: value?.store?._id, label: value?.store?.name };
     this.setState({
       index: d.index,
       firstName: value.firstName,
@@ -81,6 +94,7 @@ export default class Vendor extends Component {
       email: value.email,
       editId: value._id,
       selectedDepartment,
+      selectedStore,
       adminButtonState: false
     })
   }
@@ -99,63 +113,52 @@ export default class Vendor extends Component {
     );
   };
 
-  deletionAdmin=async(value)=>{
+  deletionAdmin = async (value) => {
     const previousData = [...this.state.adminData];
-        const getData = { ...previousData[value.index] };
-        const Data = previousData.filter((delelteid) => delelteid._id !== getData._id);
-        try {
-            swal({
-                title: "Are you sure?",
-                text: "Once deleted, you will not be able to recover this !",
-                icon: "warning",
-                buttons: true,
-                dangerMode: true,
-            })
-                .then(async (willDelete) => {
+    const getData = { ...previousData[value.index] };
+    const Data = previousData.filter((delelteid) => delelteid._id !== getData._id);
+    try {
+      swal({
+        title: "Are you sure?",
+        text: "Once deleted, you will not be able to recover this !",
+        icon: "warning",
+        buttons: true,
+        dangerMode: true,
+      })
+        .then(async (willDelete) => {
 
-                    if (willDelete) {
-                        const result = await Bridge.deleteUser({ _id: value.original._id })
-                        if (result.status === 200) {
-                            this.setState({ adminData: Data });
-                            swal("Poof! Your Data has been deleted!", {
-                                icon: "success",
-                            });
-                        }
+          if (willDelete) {
+            const result = await Bridge.deleteUser({ _id: value.original._id })
+            if (result.status === 200) {
+              this.setState({ adminData: Data });
+              swal("Poof! Your Data has been deleted!", {
+                icon: "success",
+              });
+            }
 
-                    } else {
-                        swal("Your Data  is safe!");
-                    }
-                });
+          } else {
+            swal("Your Data  is safe!");
+          }
+        });
 
-        } catch (error) {
-            this.setState({ adminData: previousData });
-            console.log(error);
-        }
+    } catch (error) {
+      this.setState({ adminData: previousData });
+      console.log(error);
+    }
   }
 
   async componentDidMount() {
     try {
-      const adminUser = await Bridge.getUserData();
-      if (adminUser.status == 200) {
-        this.setState({
-          adminData: adminUser.data.filter(item=>{
-            if(item.roles[0].name=='vendor'){
-                return item
-            }
-        })
-        })
-      }
-      const result = await Bridge.getDepartments();
-      if (result.status === 200) {
-        let department = [];
-        if (result.data.length) {
-          result.data.map(ival => {
-            department.push({ value: ival._id, label: ival.name })
-          });
-        }
-        this.setState({ department })
-      }
+      
+      await this.commonFunction();
 
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  commonFunction=async()=>{
+    try {
       const rolesData = await Bridge.getUserRole();
       if (rolesData.status === 200) {
         let roles = [];
@@ -168,7 +171,34 @@ export default class Vendor extends Component {
           })
         })
       }
+      const adminUser = await Bridge.getUserData(`?role=${this.state.roles[0]}`);
+      if (adminUser.status == 200) {
+        this.setState({
+          adminData: adminUser.data
+        })
+      };
+      
+      const storeData = await Bridge.getStores();
+      if (storeData.status == 200) {
+        let storeList = [];
+        if (storeData.data.length) {
+          storeData.data.map(ival => {
+            storeList.push({ value: ival._id, label: ival.name })
+          });
+        }
+        this.setState({ storeList })
+      }
 
+      const result = await Bridge.getDepartments();
+      if (result.status === 200) {
+        let department = [];
+        if (result.data.length) {
+          result.data.map(ival => {
+            department.push({ value: ival._id, label: ival.name })
+          });
+        }
+        this.setState({ department })
+      }
     } catch (error) {
       console.log(error);
     }
@@ -184,11 +214,21 @@ export default class Vendor extends Component {
     this.setState({
       selectedDepartment: e
     })
-  }
+  };
+
+  HandleStore = async (e) => {
+    this.setState({
+      selectedStore: e
+    })
+  };
 
   addVendor = async () => {
-    const { firstName, lastName, password, confirmPassword, selectedDepartment, roles, email } = this.state;
+    const { firstName, lastName, password, confirmPassword, selectedDepartment, roles, email , selectedStore , phoneNumber } = this.state;
     const validateEmail = await Validators.emailValidation(email);
+    if (Object.keys(selectedStore).length === 0) {
+      swal('Please select the store')
+      return;
+    }
     if (Object.keys(selectedDepartment).length === 0) {
       swal('Please select the department')
       return;
@@ -199,6 +239,11 @@ export default class Vendor extends Component {
     }
     if (!lastName) {
       swal('Please enter the last name')
+      return;
+    }
+    const validatePhone = await Validators.phoneNumberValidation(phoneNumber);
+    if(validatePhone){
+      swal(validatePhone);
       return;
     }
     if (!email) {
@@ -228,20 +273,23 @@ export default class Vendor extends Component {
       formdata.email = email;
       formdata.department = selectedDepartment.value;
       formdata.roles = roles;
-      formdata.password = password
+      formdata.password = password;
+      formdata.store = selectedStore.value;
+      formdata.phoneNumber = phoneNumber;
       const result = await Bridge.addUserRole(formdata);
       if (result.status === 200) {
-        result.data.department = { _id: selectedDepartment.value, name: selectedDepartment.label }
         this.setState({
           firstName: '',
           lastName: '',
           email: '',
           password: '',
           confirmPassword: '',
+          phoneNumber:'',
+          selectedStore:{},
           roles: [],
           selectedDepartment: {},
-          adminData: [result.data, ...this.state.adminData]
-        })
+        });
+        await this.commonFunction();
         swal('Vendor added successfully');
       }
     } catch (error) {
@@ -251,8 +299,12 @@ export default class Vendor extends Component {
   }
 
   updateVendor = async () => {
-    const { firstName, lastName, password, confirmPassword, selectedDepartment, roles, email, editId, index } = this.state;
+    const { firstName, lastName, password, confirmPassword, selectedDepartment, roles, email, editId, index , phoneNumber ,selectedStore } = this.state;
     const validateEmail = await Validators.emailValidation(email);
+    if (Object.keys(selectedStore).length === 0) {
+      swal('Please select the store')
+      return;
+    }
     if (Object.keys(selectedDepartment).length === 0) {
       swal('Please select the department')
       return;
@@ -263,6 +315,11 @@ export default class Vendor extends Component {
     }
     if (!lastName) {
       swal('Please enter the last name')
+      return;
+    }
+    const validatePhone = await Validators.phoneNumberValidation(phoneNumber);
+    if(validatePhone){
+      swal(validatePhone);
       return;
     }
     if (!email) {
@@ -293,13 +350,12 @@ export default class Vendor extends Component {
       formdata.department = selectedDepartment.value;
       formdata.roles = roles;
       formdata._id = editId;
+      formdata.store = selectedStore.value;
+      formdata.phoneNumber = phoneNumber;
 
       const result = await Bridge.updateUserRole(formdata);
       if(result.status===200){
-        formdata.department = { _id: selectedDepartment.value, name: selectedDepartment.label };
-        const previousAdminData = [...this.state.adminData];
-        previousAdminData[index] = formdata
-        this.setState({
+         this.setState({
           firstName: '',
           lastName: '',
           email: '',
@@ -307,9 +363,11 @@ export default class Vendor extends Component {
           confirmPassword: '',
           roles: [],
           selectedDepartment: {},
-          adminData: previousAdminData,
-          adminButtonState:true
-        })
+          adminButtonState:true,
+          phoneNumber:'',
+          selectedStore:{},
+        });
+        await this.commonFunction();
         swal('Vendor updated successfully');
       }
 
@@ -333,6 +391,20 @@ export default class Vendor extends Component {
                     </div>
 
                     <div class="card-body">
+                      <div className="row form-group">
+                        <div className="col-sm-2"></div>
+                        <div className="col-sm-2">
+                          <label class="labell2">Select Store</label>
+                        </div>
+                        <div className="col-sm-4">
+                          <SingleSelect
+                            options={this.state.storeList}
+                            handleChange={d => this.HandleStore(d)}
+                            selectedService={this.state.selectedStore}
+                          />
+                        </div>
+                        <div className="col-sm-3"></div>
+                      </div>
 
                       <div className="row form-group">
                         <div className="col-sm-2"></div>
@@ -377,6 +449,23 @@ export default class Vendor extends Component {
                             onChange={this.handleChange}
                             value={this.state.lastName}
                             name="lastName" />
+                        </div>
+                        <div className="col-sm-3"></div>
+                      </div>
+
+                      <div className="row form-group">
+                        <div className="col-sm-2"></div>
+                        <div className="col-sm-2">
+                          <label class="labell2">Phone Number</label>
+                        </div>
+                        <div className="col-sm-4">
+                          <input type="text"
+                            class="form-control"
+                            placeholder="Enter the phone number"
+                            onChange={this.handleChange}
+                            onKeyPress={Validators.isNumber}
+                            value={this.state.phoneNumber}
+                            name="phoneNumber" />
                         </div>
                         <div className="col-sm-3"></div>
                       </div>

@@ -24,43 +24,49 @@ export default class Ticket extends Component {
       ticketButtonState: true,
       department: [],
       storeList: [],
+      index:null,
+      editId:null,
       selectedStore: {},
       recordState: null,
-      audioFile: false,
-      viewImage_1:null,
-      viewImage_2:null,
-      viewImage_3:null,
-      viewAudio:null,
+      audioFile: null,
+      viewImage_1: null,
+      viewImage_2: null,
+      viewImage_3: null,
+      viewAudio: null,
       column: [
         {
           Header: "Store",
           accessor: "store",
-          Cell:(d)=>this.storeColumn(d),
+          Cell: (d) => this.storeColumn(d),
         },
         {
           Header: "Department",
           accessor: "department",
-          Cell:(d)=>this.departmentColumn(d),
+          Cell: (d) => this.departmentColumn(d),
         },
         {
           Header: "Title",
           accessor: "title"
         },
         {
+          Header: "Status",
+          accessor: "status"
+        },
+        {
           Header: "Created At",
           accessor: "createdAt",
-          Cell:(d)=>this.createdAt(d)
+          Cell: (d) => this.createdAt(d)
         },
         {
           Header: "Media",
           accessor: "name",
-          Cell:(d)=>this.viewMediaModel(d)
+          Cell: (d) => this.viewMediaModel(d)
         },
-        {
-          Header: "Edit",
-          accessor: "name",
-          Cell: (d) => this.editTicket(d),
-        },
+        // {
+        //   Header: "Edit",
+        //   accessor: "name",
+        //   Cell: (d) => this.editTicket(d),
+        // },
         {
           Header: "Delete",
           accessor: "delete",
@@ -70,15 +76,20 @@ export default class Ticket extends Component {
     }
   }
 
-  createdAt=(d)=>{
-    return <p>{moment(d.original.createdAt).format('MMM Do YY')}</p>
+  createdAt = (d) => {
+    // moment().format('MMMM Do YYYY, h:mm:ss a'); // December 15th 2021, 6:31:12 pm
+    // moment().format('dddd');                    // Wednesday
+    // moment().format("MMM Do YY");               // Dec 15th 21
+    // moment().format('YYYY [escaped] YYYY');     // 2021 escaped 2021
+    // moment().format(); 
+    return <p>{moment(d.original.createdAt).format('MMM Do YY, h:mm a')}</p>
   }
 
-  storeColumn=(d)=>{
+  storeColumn = (d) => {
     return <p>{d.original.store.name}</p>
   }
 
-  departmentColumn=(d)=>{
+  departmentColumn = (d) => {
     return <p>{d.original.department.name}</p>
   }
 
@@ -89,7 +100,7 @@ export default class Ticket extends Component {
         <button
           type="button"
           className="btn btn-info"
-          onClick={() => this.editionStore(value)}
+          onClick={() => this.editionTicket(value)}
         >
           Edit
         </button>
@@ -97,7 +108,25 @@ export default class Ticket extends Component {
     );
   };
 
-  viewMediaModel=(d)=>{
+  editionTicket=async(e)=>{
+    let d = e.original;
+    console.log(d);
+    this.setState({
+      index:e.original.index,
+      editId:d._id,
+      title:d.title,
+      ticketButtonState:false,
+      selectedDepartment:{ value:d.department?._id,label:d.department?.name },
+      selectedStore:{value:d.store?._id,label:d.store?.name} ,
+      audioFile:d.voiceNoteUrl,
+      image:[ 
+        { filename:d?.image_1 , file:d?.image_1 },
+        { filename:d?.image_2 ,file:d?.image_2 } ]
+    })
+
+  }
+
+  viewMediaModel = (d) => {
     return (
       <center>
         <button
@@ -114,7 +143,7 @@ export default class Ticket extends Component {
   };
 
   openModelWindow = async (e) => {
-      console.log(e.original)
+    console.log(e.original)
     this.setState({
       viewImage_1: e.original.image_1,
       viewImage_2: e.original.image_2,
@@ -196,14 +225,14 @@ export default class Ticket extends Component {
         this.setState({ storeList })
       }
 
-        await this.getTicktesData();
+      await this.getTicktesData();
 
     } catch (error) {
       console.log(error);
     }
   }
 
-  getTicktesData = async()=>{
+  getTicktesData = async () => {
     try {
       const getTickets = await Bridge.getTicket();
       if (getTickets.status == 200) {
@@ -240,10 +269,11 @@ export default class Ticket extends Component {
   handleChangeFile = async (index, e) => {
     const currentImageFiles = [...this.state.image];
     currentImageFiles[index] = { filename: e.target.files[0].name, file: e.target.files[0] }
+    console.log(e.target.files[0]);
     this.setState({
       image: currentImageFiles
     });
-  } 
+  }
 
   addTicket = async () => {
     const { title, description, selectedStore, selectedDepartment, image, audioFile } = this.state;
@@ -255,6 +285,21 @@ export default class Ticket extends Component {
 
     if (Object.keys(selectedDepartment).length == 0) {
       swal("Please select the department");
+      return
+    }
+
+    if (!title) {
+      swal("Please enter the title");
+      return
+    }
+
+    if (audioFile == null) {
+      swal("Please upload audio file");
+      return
+    }
+
+    if (!image[0]?.filename) {
+      swal("Please upload Image file");
       return
     }
 
@@ -290,6 +335,31 @@ export default class Ticket extends Component {
       console.log(error);
     }
 
+  };
+
+  updateTicket=async()=>{
+    const { title, description, selectedStore, selectedDepartment, image, audioFile } = this.state;
+
+    if (Object.keys(selectedStore).length == 0) {
+      swal("Please select the store");
+      return
+    }
+
+    if (Object.keys(selectedDepartment).length == 0) {
+      swal("Please select the department");
+      return
+    }
+
+    if (!title) {
+      swal("Please enter the title");
+      return
+    }
+
+    try {
+      
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   handleAudioFile = async (e) => {
@@ -310,33 +380,42 @@ export default class Ticket extends Component {
             indexStyle={{ color: "black", fontWeight: '500' }}
             ButtonBody={
               <React.Fragment>
-                 <div className="row form-group">
-                   <div className="col-sm-3">
-                      <label class="labell2">Image-1</label>
-                    </div>
-                    <div className="col-sm-4">
-                      <img src={this.state.viewImage_1} width={300} height={200} />
-                    </div>
-                    <div className="col-sm-3"></div>
+                <div className="row form-group">
+                  <div className="col-sm-3">
+                    <label class="labell2">Image-1</label>
                   </div>
-                  <div className="row form-group">
-                   <div className="col-sm-3">
-                      <label class="labell2">Image-2</label>
-                    </div>
-                    <div className="col-sm-4">
-                      <img src={this.state.viewImage_2} width={300} height={200} />
-                    </div>
-                    <div className="col-sm-3"></div>
+                  <div className="col-sm-4">
+                    <img src={this.state.viewImage_1} width={300} height={200} />
                   </div>
-                  <div className="row form-group">
-                   <div className="col-sm-3">
-                      <label class="labell2">Audio</label>
-                    </div>
-                    <div className="col-sm-4">
-                      <audio src={this.state.viewAudio} width={300} height={200} controls="controls" />
-                    </div>
-                    <div className="col-sm-3"></div>
+                  <div className="col-sm-3"></div>
+                </div>
+                <div className="row form-group">
+                  <div className="col-sm-3">
+                    <label class="labell2">Image-2</label>
                   </div>
+                  <div className="col-sm-4">
+                    <img src={this.state.viewImage_2} width={300} height={200} />
+                  </div>
+                  <div className="col-sm-3"></div>
+                </div>
+                <div className="row form-group">
+                  <div className="col-sm-3">
+                    <label class="labell2">Image-3</label>
+                  </div>
+                  <div className="col-sm-4">
+                    <img src={this.state.viewImage_3} width={300} height={200} />
+                  </div>
+                  <div className="col-sm-3"></div>
+                </div>
+                <div className="row form-group">
+                  <div className="col-sm-3">
+                    <label class="labell2">Audio</label>
+                  </div>
+                  <div className="col-sm-4">
+                    <audio src={this.state.viewAudio} width={300} height={200} controls="controls" />
+                  </div>
+                  <div className="col-sm-3"></div>
+                </div>
               </React.Fragment>
             }
           />
@@ -417,7 +496,7 @@ export default class Ticket extends Component {
                           <label class="labell2">Upload Voice</label>
                         </div>
                         <div className="col-sm-6">
-                          <AudioRecorder audioFile={this.state.audioFile} handleAudioFile={this.handleAudioFile} />
+                          <AudioRecorder  handleAudioFile={this.handleAudioFile} />
                         </div>
                       </div>
 

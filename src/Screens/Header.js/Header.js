@@ -10,7 +10,9 @@ export default class Header extends Component {
     this.state = {
       userName: '',
       token: localStorage.getItem('token'),
-      userDetail: localStorage.getItem('userDetail')
+      userDetail: localStorage.getItem('userDetail'),
+      roles : localStorage.getItem('roles') !== null ? JSON.parse(localStorage.getItem('roles')) : null,
+      image:null
     }
   }
   async componentDidMount() {
@@ -20,7 +22,8 @@ export default class Header extends Component {
       if (userDetail != null) {
         userDetail = JSON.parse(userDetail);
         this.setState({
-          userName: userDetail.firstName
+          userName: userDetail.firstName,
+          image : userDetail?.profileImageUrl
         })
       }else{
         window.location.href='/';
@@ -44,7 +47,7 @@ export default class Header extends Component {
   }
 
   render() {
-    const { userName } = this.state;
+    const { userName ,roles} = this.state;
     return (
       <React.Fragment>
         <div class="navbar-bg"></div>
@@ -74,10 +77,11 @@ export default class Header extends Component {
 
             <li class="dropdown"><a href="#" data-toggle="dropdown"
               class="nav-link dropdown-toggle nav-link-lg nav-link-user">
-              <img alt="image" src="assets/img/user.png"
-                class="user-img-radious-style" />
+              <img alt="image" src={this.state.image} width={30} height={30}
+               class="user-img-radious-style" />
               <span class="d-sm-none d-lg-inline-block"></span></a>
               <div class="dropdown-menu dropdown-menu-right pullDown">
+              <div class="dropdown-title">Role : {roles?.name}</div>
                 <div class="dropdown-title">Hello {userName}</div>
                 <a href="/profile" class="dropdown-item has-icon"> <i class="far
 										fa-user"></i> Profile
