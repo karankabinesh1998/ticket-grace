@@ -4,6 +4,7 @@ import './auth.css';
 import Validators from '../../HelperComponents/Validators';
 import Bridge from '../../Middleware/Bridge';
 import swal from 'sweetalert';
+import Loader from '../../Components/Loader/Loader';
 export default class UserLogin extends Component {
   constructor(props) {
     super(props);
@@ -11,7 +12,8 @@ export default class UserLogin extends Component {
       emailAddress: null,
       password: null,
       errorEmail: null,
-      errorPassword: null
+      errorPassword: null,
+      isLoading :false
     }
   }
 
@@ -31,6 +33,7 @@ export default class UserLogin extends Component {
   }
 
   initiateLogin = async () => {
+   try {
     const { emailAddress, password } = this.state;
     const validateEmail = await Validators.emailValidation(emailAddress);
     const validatePassword = await Validators.passwordValidation(password);
@@ -52,23 +55,35 @@ export default class UserLogin extends Component {
     let data = {
       email: emailAddress,
       password: password
-    }
-    const result = await Bridge.userLogin(data);
-    if (result.status === 200) {
-      localStorage.setItem('token', result.data.token);
-      localStorage.setItem('userDetail', JSON.stringify(result.data));
-      localStorage.setItem('roles', JSON.stringify(result.data.roles[0]));
-      window.location.href = '/dashboard';
-    }else{
-      swal("user name or password wrong !!!")
-    }
-  }
+    };
+      this.setState({
+        isLoading : true
+      })
+     const resultData = await Bridge.userLogin(data, (result) => {
+       if (result.status === 200) {
+         localStorage.setItem('token', result.data.token);
+         localStorage.setItem('userDetail', JSON.stringify(result.data));
+         localStorage.setItem('roles', JSON.stringify(result.data.roles[0]));
+         window.location.href = '/dashboard';
+       } else {
+         swal(result.message)
+       }
+       this.setState({
+        isLoading : false
+      })
+     });
+    
+   } catch (error) {
+     console.log(error);
+   }
+  };
 
   render() {
-    const { emailAddress, password, errorEmail, errorPassword } = this.state;
+    const { emailAddress, password, errorEmail, errorPassword , isLoading } = this.state;
     return (
       <React.Fragment>
-        <div class="loader"></div>
+        {isLoading ? <Loader /> : null }
+        
         <div id="app">
           <section class="section">
             <div class="container mt-5">

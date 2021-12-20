@@ -5,6 +5,7 @@ import swal from 'sweetalert';
 import '../commonStyle.css';
 import moment from 'moment';
 import ModelWindow from '../../Components/Model';
+import Loader from '../../Components/Loader/Loader';
 
 export default class EvaluationHistory extends Component {
   constructor(props) {
@@ -42,8 +43,14 @@ export default class EvaluationHistory extends Component {
         },
         {
           Header: "Score",
-          accessor: "score",
+          accessor: "scores",
+          Cell:(d)=><p>{d.original?.scores ? this.evaluateScore(d.original?.scores) : 0 }</p>
          },
+         {
+           Header:"UpdatedAt",
+           accessor:"updatedAt",
+           Cell:(d)=><p>{moment(d.original?.updatedAt).format("MMM Do YY, h:mm a")}</p>
+         }
         // {
         //   Header: "Closed AT",
         //   accessor: "closeAt",
@@ -62,6 +69,14 @@ export default class EvaluationHistory extends Component {
       ]
     }
   };
+
+  evaluateScore=(score)=>{
+    let count = 0;
+    for (const property in score) {
+      count = count + score[property];
+    };
+    return <p>{count}</p>;
+  }
 
   evaluationButton = (d) => {
     return (
@@ -171,7 +186,9 @@ export default class EvaluationHistory extends Component {
 
   async componentDidMount() {
     try {
+      this.setState({ isLoading:true })
       await this.getTickets();
+      this.setState({ isLoading:false })
     } catch (error) {
       console.log(error);
     }
@@ -179,21 +196,16 @@ export default class EvaluationHistory extends Component {
 
   getTickets = async () => {
     try {
-      // const result = await Bridge.getTicket(`?status=close`);
+        await Bridge.getEvaluation(null,getEvaluation=>{
 
-      // if (result.status === 200) {
-      //   this.setState({
-      //     ticketsData: result.data
-      //   })
-      // };
-
-      const getEvaluation = await Bridge.getEvaluation();
-      if(getEvaluation.status===200){
-          console.log(getEvaluation.data);
-          this.setState({
-            ticketsData: getEvaluation.data
-          })
-      }
+         if(getEvaluation.status===200){
+             this.setState({
+               ticketsData: getEvaluation.data
+             })
+         }else{
+           swal(getEvaluation.message)
+         }
+       });
     } catch (error) {
       console.log(error);
     }
@@ -205,6 +217,7 @@ export default class EvaluationHistory extends Component {
     const { workerObject, ticketObject } = this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null }
         <div class="main-content">
 
           <ModelWindow

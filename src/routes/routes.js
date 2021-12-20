@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Route } from 'react-router-dom';
+import { BrowserRouter, Route , Switch , browserHistory } from 'react-router-dom';
 import Admin from '../Screens/Admin/Admin';
 import ForgotPassword from '../Screens/Auth/ForgotPassword';
 import UserLogin from '../Screens/Auth/UserLogin';
@@ -18,11 +18,13 @@ import ViewTicket from '../Screens/Ticket/ViewTicket';
 import TicketHistory from '../Screens/Ticket/TicketHistory';
 import Evaluation from '../Screens/Evaluation/Evaluation';
 import EvaluationHistory from '../Screens/Evaluation/EvaluationHistory';
+import PageNotFound from '../Screens/ErrorPage/PageNotFound';
 
 
 export default function Routes() {
   return (
     <BrowserRouter>
+    <Switch>
       <Route
         exact
         path={'/'}
@@ -42,14 +44,14 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <Dashboard {...props} />
+                  <Dashboard {...props} />
                 </div>
               </div>
             </div>
           </React.Fragment>
         )}
       />
-       <Route
+      <Route
         exact
         path={'/department'}
         render={(props) => (
@@ -59,7 +61,7 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <Departments {...props} />
+                  <Departments {...props} />
                 </div>
               </div>
             </div>
@@ -76,7 +78,7 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <Admin {...props} />
+                  <Admin {...props} />
                 </div>
               </div>
             </div>
@@ -93,7 +95,7 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <StoreManager {...props} />
+                  <StoreManager {...props} />
                 </div>
               </div>
             </div>
@@ -110,7 +112,7 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <Vendor {...props} />
+                  <Vendor {...props} />
                 </div>
               </div>
             </div>
@@ -127,7 +129,7 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <Worker {...props} />
+                  <Worker {...props} />
                 </div>
               </div>
             </div>
@@ -144,7 +146,7 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <Ticket {...props} />
+                  <Ticket {...props} />
                 </div>
               </div>
             </div>
@@ -161,7 +163,7 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <Store {...props} />
+                  <Store {...props} />
                 </div>
               </div>
             </div>
@@ -178,7 +180,7 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <AssignTicket {...props} />
+                  <AssignTicket {...props} />
                 </div>
               </div>
             </div>
@@ -195,7 +197,7 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <Profile {...props} />
+                  <Profile {...props} />
                 </div>
               </div>
             </div>
@@ -212,7 +214,7 @@ export default function Routes() {
                 <Header {...props} />
                 <SideNavBar {...props} />
                 <div className="app-body">
-                <ForgotPassword {...props} />
+                  <ForgotPassword {...props} />
                 </div>
               </div>
             </div>
@@ -290,6 +292,8 @@ export default function Routes() {
           </React.Fragment>
         )}
       />
+      <Route component={PageNotFound} />
+      </Switch>
     </BrowserRouter>
   )
 }

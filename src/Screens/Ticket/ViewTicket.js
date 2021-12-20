@@ -1,12 +1,11 @@
 import React, { Component } from 'react';
 import Datatable from '../../Components/Datatable/Datatable';
 import Bridge from '../../Middleware/Bridge';
-import SingleSelect from '../../Components/SingleSelect';
 import swal from 'sweetalert';
 import '../commonStyle.css';
-import AudioRecorder from '../../Components/Audio/AudioRecorder';
-import moment from 'moment';
 import ModelWindow from '../../Components/Model';
+import Loader from '../../Components/Loader/Loader';
+import moment from 'moment';
 
 export default class ViewTicket extends Component {
   constructor(props) {
@@ -15,28 +14,44 @@ export default class ViewTicket extends Component {
       ticketObject: {},
       workerObject: {},
       ticketsData: [],
-      editId:null,
-       column: [
-          {
-            Header: "Store",
-            accessor: "store",
-            Cell: (d) => this.storeColumn(d),
-          },
-          {
-            Header: "Department",
-            accessor: "department",
-            Cell: (d) => this.departmentColumn(d),
-          },
-          {
-            Header: "Ticket",
-            accessor: "title",
-            Cell: (d) => this.ticketViewButton(d)
-          },
-          {
-            Header: "Assigned To",
-            accessor: "title",
-            Cell: (d) => this.workerViewButton(d)
-          },
+      isLoading:false,
+      editId: null,
+      column: [
+        {
+          Header: "Store",
+          accessor: "store",
+          Cell: (d) => this.storeColumn(d),
+        },
+        {
+          Header: "Department",
+          accessor: "department",
+          Cell: (d) => this.departmentColumn(d),
+        },
+        {
+          Header: "Ticket",
+          accessor: "title",
+          Cell: (d) => this.ticketViewButton(d)
+        },
+        {
+          Header: "Assigned To",
+          accessor: "title",
+          Cell: (d) => this.workerViewButton(d)
+        },
+        {
+          Header: "Assigned By",
+          accessor: "assignedBy",
+          Cell: (d) => <p> {d.original?.assignedBy?.firstName} {d.original?.assignedBy?.lastName} </p>
+        },
+        {
+          Header: "CreatedBy",
+          accessor: "createdBy",
+          Cell: (d) => <p> {d.original?.createdBy?.firstName} {d.original?.createdBy?.lastName} </p>
+        },
+        {
+          Header: "CreatedAt",
+          accessor: "createdAt",
+          Cell: (d) => <p>{moment(d.original?.createdAt).format("MMM Do YYYY")}</p>,
+        },
         {
           Header: "Close ticket",
           accessor: "title",
@@ -46,8 +61,8 @@ export default class ViewTicket extends Component {
     }
   };
 
-  closeTicketButton=(d)=>{
-    return(
+  closeTicketButton = (d) => {
+    return (
       <center>
       <button
         type="button"
@@ -122,17 +137,21 @@ export default class ViewTicket extends Component {
       })
         .then(async (willDelete) => {
           if (willDelete) {
-            const result = await Bridge.closeAssignTicket({_id : this.state.editId , closeDescription : this.state.closeDescription });
-            if(result.status===200){
-              await this.getTickets();
+            await Bridge.closeAssignTicket({_id : this.state.editId , closeDescription : this.state.closeDescription },async result=>{
 
-              this.setState({
-                closeDescription:'',
-                editId:null
-              });
-
-              swal("Tickets close successfully")
-            }
+              if(result.status===200){
+                await this.getTickets();
+  
+                this.setState({
+                  closeDescription:'',
+                  editId:null
+                });
+                swal("Tickets closed successfully")
+                window.location.reload()
+              }else{
+                swal(result.message)
+              }
+            });
           }else{
             swal(" Cancelled ")
           }
@@ -153,7 +172,9 @@ export default class ViewTicket extends Component {
 
   async componentDidMount() {
     try {
+      this.setState({ isLoading:true })
       await this.getTickets();
+      this.setState({ isLoading:false })
     } catch (error) {
       console.log(error);
     }
@@ -161,13 +182,17 @@ export default class ViewTicket extends Component {
 
   getTickets = async () => {
     try {
-      const result = await Bridge.getTicket(`?status=assigned`);
+      await Bridge.getTicket(`?status=assigned`,result=>{
 
-      if (result.status === 200) {
-        this.setState({
-          ticketsData: result.data
-        })
-      }
+        if (result.status === 200) {
+          this.setState({
+            ticketsData: result.data
+          })
+        }else{
+          swal(result.message)
+        }
+      });
+
     } catch (error) {
       console.log(error);
     }
@@ -179,6 +204,7 @@ export default class ViewTicket extends Component {
     const { workerObject, ticketObject } = this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null }
         <div class="main-content">
 
         <ModelWindow

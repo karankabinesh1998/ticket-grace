@@ -7,7 +7,6 @@ export default function SelectImage({profileImageUrl,handleImageFile}) {
        inputFile.current.click();
       };
       const chooseImage = async(e)=>{
-        console.log(e.target.files[0]);
         handleImageFile(e.target.files[0])
       }
     return (

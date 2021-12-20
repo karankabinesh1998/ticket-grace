@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
 import Bridge from '../../Middleware/Bridge';
 import Datatable from "../../Components/Datatable/Datatable";
-import SingleSelect from '../../Components/SingleSelect';
+import SingleSelect from '../../Components/InputComponent/SingleSelect';
 import swal from 'sweetalert';
 import '../commonStyle.css';
 import Validators from '../../HelperComponents/Validators';
+import Loader from '../../Components/Loader/Loader';
+import moment from 'moment';
 
 export default class Admin extends Component {
   constructor(props) {
@@ -37,11 +39,16 @@ export default class Admin extends Component {
           Header: "Email",
           accessor: "email"
         },
-        // {
-        //   Header: "Department",
-        //   accessor: "department",
-        //   Cell: (d) => this.viewDepartment(d)
-        // },
+        {
+          Header: "CreatedBy",
+          accessor: "createdBy",
+          Cell: (d) => <p> {d.original?.createdBy?.firstName} {d.original?.createdBy?.lastName} </p>
+        },
+        {
+          Header: "CreatedAt",
+          accessor: "createdAt",
+          Cell: (d) => <p>{moment(d.original?.createdAt).format("MMM Do YYYY")}</p>,
+        },
         {
           Header: "Edit",
           accessor: "firstname",
@@ -52,7 +59,8 @@ export default class Admin extends Component {
           accessor: "delete",
           Cell: (d) => this.deleteAdminUser(d),
         }
-      ]
+      ],
+      isLoading:false
     }
   }
 
@@ -79,7 +87,7 @@ export default class Admin extends Component {
 
   editionAdmin = async (d) => {
     let value = d.original;
-    let selectedStore = { value: value?.store?._id, label: value?.department?.name };
+    let selectedStore = { value: value?.store?._id, label: value?.store?.name };
     this.setState({
       index: d.index,
       firstName: value.firstName,
@@ -87,7 +95,8 @@ export default class Admin extends Component {
       email: value.email,
       editId: value._id,
       selectedStore,
-      adminButtonState: false
+      adminButtonState: false,
+      phoneNumber:value.phoneNumber
     })
   }
 
@@ -120,13 +129,17 @@ export default class Admin extends Component {
         .then(async (willDelete) => {
 
           if (willDelete) {
-            const result = await Bridge.deleteUser({ _id: value.original._id })
-            if (result.status === 200) {
-              this.setState({ adminData: Data });
-              swal("Poof! Your Data has been deleted!", {
-                icon: "success",
-              });
-            }
+             await Bridge.deleteUser({ _id: value.original._id },result=>{
+
+               if (result.status === 200) {
+                 this.setState({ adminData: Data });
+                 swal("Poof! Your Data has been deleted!", {
+                   icon: "success",
+                 });
+               }else{
+                 swal(result.message)
+               }
+            })
 
           } else {
             swal("Your Data  is safe!");
@@ -141,7 +154,9 @@ export default class Admin extends Component {
 
   async componentDidMount() {
     try {
+      this.setState({ isLoading:true });
       await this.commanFunction();
+      this.setState({ isLoading:false });
     } catch (error) {
       console.log(error);
     }
@@ -149,47 +164,62 @@ export default class Admin extends Component {
 
   commanFunction = async () => {
     try {
-      const rolesData = await Bridge.getUserRole();
-      if (rolesData.status === 200) {
-        let roles = [];
-        rolesData.data.map(item => {
-          if (item.name == 'admin') {
-            roles.push(item._id);
-          }
-          this.setState({
-            roles
+      await Bridge.getUserRole(rolesData => {
+
+        if (rolesData.status === 200) {
+          let roles = [];
+          rolesData.data.map(item => {
+            if (item.name == 'admin') {
+              roles.push(item._id);
+            }
+            this.setState({
+              roles
+            })
           })
-        })
-      }
-
-      const adminUser = await Bridge.getUserData(`?role=${this.state.roles}`);
-      if (adminUser.status == 200) {
-        this.setState({
-          adminData: adminUser.data
-        })
-      };
-
-      const storeData = await Bridge.getStores();
-      if (storeData.status == 200) {
-        let storeList = [];
-        if (storeData.data.length) {
-          storeData.data.map(ival => {
-            storeList.push({ value: ival._id, label: ival.name })
-          });
+        } else {
+          swal(rolesData.message)
         }
-        this.setState({ storeList })
-      }
+      });
 
-      const result = await Bridge.getDepartments();
-      if (result.status === 200) {
-        let department = [];
-        if (result.data.length) {
-          result.data.map(ival => {
-            department.push({ value: ival._id, label: ival.name })
+      await Bridge.getUserData(`?role=${this.state.roles}`, adminUser => {
+        if (adminUser.status == 200) {
+          this.setState({
+            adminData: adminUser.data
           });
+        }else{
+          swal(adminUser.message);
         }
-        this.setState({ department })
-      }
+      });
+
+       await Bridge.getStores(storeData=>{
+
+         if (storeData.status == 200) {
+           let storeList = [];
+           if (storeData.data.length) {
+             storeData.data.map(ival => {
+               storeList.push({ value: ival._id, label: ival.name })
+             });
+           }
+           this.setState({ storeList })
+         }else{
+           swal(storeData.message)
+         }
+       });
+
+     await Bridge.getDepartments(result=>{
+
+        if (result.status === 200) {
+          let department = [];
+          if (result.data.length) {
+            result.data.map(ival => {
+              department.push({ value: ival._id, label: ival.name })
+            });
+          }
+          this.setState({ department })
+        }else{
+          swal(result.message)
+        }
+      });
     } catch (error) {
       console.log(error);
     }
@@ -263,22 +293,28 @@ export default class Admin extends Component {
       formdata.roles = roles;
       formdata.password = password;
       formdata.phoneNumber=phoneNumber;
-      const result = await Bridge.addUserRole(formdata);
-      if (result.status === 200) {
-        this.setState({
-          firstName: '',
-          lastName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          roles: [],
-          selectedDepartment: {},
-          selectedStore:{},
-          phoneNumber:''
-          });
-          await this.commanFunction();
-        swal('Admin added successfully');
-      }
+      this.setState({ isLoading:true });
+       await Bridge.addUserRole(formdata,async result=>{
+
+         if (result.status === 200) {
+           this.setState({
+             firstName: '',
+             lastName: '',
+             email: '',
+             password: '',
+             confirmPassword: '',
+             roles: [],
+             selectedDepartment: {},
+             selectedStore:{},
+             phoneNumber:''
+             });
+             await this.commanFunction();
+             this.setState({ isLoading:false }); 
+           swal('Admin added successfully');
+         }else{
+           swal(result.message)
+         }
+      });
     } catch (error) {
       console.log(error)
     }
@@ -335,24 +371,29 @@ export default class Admin extends Component {
       formdata._id = editId;
       formdata.phoneNumber=phoneNumber;
 
+      this.setState({ isLoading : true })
+      await Bridge.updateUserRole(formdata,async result=>{
 
-      const result = await Bridge.updateUserRole(formdata);
-      if (result.status === 200) {
-        this.setState({
-          firstName: '',
-          lastName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          roles: [],
-          selectedDepartment: {},
-          phoneNumber:'',
-          adminButtonState: true,
-          selectedStore: {}
-        });
-        await this.commanFunction();
-        swal('Admin updated successfully');
-      }
+        if (result.status === 200) {
+          this.setState({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            roles: [],
+            selectedDepartment: {},
+            phoneNumber:'',
+            adminButtonState: true,
+            selectedStore: {}
+          });
+          await this.commanFunction();
+          this.setState({ isLoading :false })
+          swal('Admin updated successfully');
+        }else{
+          swal(result.message)
+        }
+      });
 
     } catch (error) {
       console.log(error);
@@ -360,9 +401,10 @@ export default class Admin extends Component {
   }
 
   render() {
-    const { adminButtonState } = this.state;
+    const { adminButtonState  } = this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null }
         <div class="main-content">
           <section class="section">
             <div class="section-body">

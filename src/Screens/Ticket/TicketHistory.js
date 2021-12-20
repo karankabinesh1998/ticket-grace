@@ -5,6 +5,7 @@ import swal from 'sweetalert';
 import '../commonStyle.css';
 import moment from 'moment';
 import ModelWindow from '../../Components/Model';
+import Loader from '../../Components/Loader/Loader';
 
 export default class TicketHistory extends Component {
     constructor(props) {
@@ -14,6 +15,7 @@ export default class TicketHistory extends Component {
             workerObject: {},
             ticketsData: [],
             editId: null,
+            isLoading:false,
             column: [
                 {
                     Header: "Store",
@@ -34,6 +36,16 @@ export default class TicketHistory extends Component {
                     Header: "Assigned To",
                     accessor: "title",
                     Cell: (d) => this.workerViewButton(d)
+                },
+                {
+                  Header: "Assigned By",
+                  accessor: "assignedBy",
+                  Cell: (d) => <p> {d.original?.assignedBy?.firstName} {d.original?.assignedBy?.lastName} </p>
+                },
+                {
+                  Header: "CreatedAt",
+                  accessor: "createdAt",
+                  Cell: (d) => <p>{moment(d.original?.createdAt).format("MMM Do YYYY")}</p>,
                 },
                 {
                     Header: "Closed AT",
@@ -156,7 +168,9 @@ export default class TicketHistory extends Component {
 
   async componentDidMount() {
     try {
+      this.setState({ isLoading:true })
       await this.getTickets();
+      this.setState({ isLoading:false })
     } catch (error) {
       console.log(error);
     }
@@ -164,13 +178,17 @@ export default class TicketHistory extends Component {
 
   getTickets = async () => {
     try {
-      const result = await Bridge.getTicket(`?status=close`);
+      const result = await Bridge.getTicket(`?status=close`,result=>{
 
-      if (result.status === 200) {
-        this.setState({
-          ticketsData: result.data
-        })
-      }
+        if (result.status === 200) {
+          this.setState({
+            ticketsData: result.data
+          })
+        }else{
+          swal(result.message)
+        }
+      });
+
     } catch (error) {
       console.log(error);
     }
@@ -182,6 +200,7 @@ export default class TicketHistory extends Component {
     const { workerObject, ticketObject } = this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null }
         <div class="main-content">
 
         <ModelWindow

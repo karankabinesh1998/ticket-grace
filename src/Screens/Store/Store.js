@@ -3,6 +3,8 @@ import Bridge from '../../Middleware/Bridge';
 import Datatable from "../../Components/Datatable/Datatable";
 import swal from 'sweetalert';
 import '../commonStyle.css';
+import Loader from '../../Components/Loader/Loader';
+import moment from 'moment';
 
 
 export default class Store extends Component {
@@ -26,6 +28,16 @@ export default class Store extends Component {
           accessor: "address"
         },
         {
+          Header: "CreatedBy",
+          accessor: "createdBy",
+          Cell: (d) => <p> {d.original?.createdBy?.firstName} {d.original?.createdBy?.lastName} </p>
+        },
+        {
+          Header: "CreatedAt",
+          accessor: "createdAt",
+          Cell: (d) => <p>{moment(d.original?.createdAt).format("MMM Do YYYY")}</p>,
+        },
+        {
           Header: "Edit",
           accessor: "name",
           Cell: (d) => this.editStore(d),
@@ -35,18 +47,22 @@ export default class Store extends Component {
           accessor: "delete",
           Cell: (d) => this.deleteStore(d),
         },
-      ]
+      ],
+      isLoading:false
     }
   }
 
   async componentDidMount() {
     try {
-      const result = await Bridge.getStores();
-      if (result.status === 200) {
-        this.setState({ storeData: result.data })
-      } else if (result.status === 500) {
-        swal('Something went wrong !!!')
-      }
+      this.setState({ isLoading : true })
+       await Bridge.getStores(result=>{
+        if (result.status === 200) {
+          this.setState({ storeData: result.data })
+        } else{
+          swal(result.message)
+        }
+        this.setState({ isLoading :false })
+      });
 
     } catch (error) {
       console.log(error)
@@ -109,13 +125,17 @@ export default class Store extends Component {
         .then(async (willDelete) => {
 
           if (willDelete) {
-            const result = await Bridge.deleteStore({ _id: value.original._id })
-            if (result.status === 200) {
-              this.setState({ storeData: Data });
-              swal("Poof! Your Data has been deleted!", {
-                icon: "success",
-              });
-            }
+             await Bridge.deleteStore({ _id: value.original._id },result=>{
+
+               if (result.status === 200) {
+                 this.setState({ storeData: Data });
+                 swal("Poof! Your Data has been deleted!", {
+                   icon: "success",
+                 });
+               }else{
+                 swal(result.message);
+               }
+            })
 
           } else {
             swal("Your Data  is safe!");
@@ -144,19 +164,23 @@ export default class Store extends Component {
       if(!address){
         swal('Please enter the address')
         return false;
-      }
+      };
+      this.setState({ isLoading : true })
       const formdata = { name: name, address: address }
-      const result = await Bridge.addStore(formdata);
-      if (result.status === 200) {
-       this.setState({
-          storeData: [result.data, ...this.state.storeData],
-          name: '',
-          address:''
-        })
-        swal('Store added successfully')
-      } else if (result.status === 409) {
-        swal('Store were already exists')
-      }
+      await Bridge.addStore(formdata,result=>{
+
+        if (result.status === 200) {
+         this.setState({
+            storeData: [result.data, ...this.state.storeData],
+            name: '',
+            address:''
+          })
+          swal('Store added successfully')
+        } else{
+          swal(result.message)
+        }
+        this.setState({ isLoading : false })
+      });
     } catch (error) {
       console.log(error)
       //TODO: handle error
@@ -169,28 +193,36 @@ export default class Store extends Component {
       if (!name) {
         swal('Please enter the name')
         return false;
-      }
-      const formdata = { _id: editId, name: name , address }
-      const result = await Bridge.editStore(formdata);
-      if (result.status === 200) {
-        const upadatestoreData = [...this.state.storeData];
-        upadatestoreData[index] = result.data;
-        this.setState({
-          name: '',
-          storeData: upadatestoreData,
-          storeButtonState: true,
-        });
-        swal('Store updated successfully')
-      }
+      };
+      this.setState({ isLoading : true })
+      const formdata = { _id: editId, name: name , address };
+       await Bridge.editStore(formdata,result=>{
+
+        if (result.status === 200) {
+          const upadatestoreData = [...this.state.storeData];
+          upadatestoreData[index] = result.data;
+          this.setState({
+            name: '',
+            storeData: upadatestoreData,
+            storeButtonState: true,
+            address:''
+          });
+          swal('Store updated successfully')
+        }else{
+          swal(result.message);
+        }
+        this.setState({ isLoading : false })
+      });
     } catch (error) {
       console.log(error)
     }
   }
 
   render() {
-    const { storeButtonState } = this.state;
+    const { storeButtonState , isLoading } = this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null }
         <div class="main-content">
           <section class="section">
             <div class="section-body">

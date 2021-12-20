@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
 import Bridge from '../../Middleware/Bridge';
 import Datatable from "../../Components/Datatable/Datatable";
-import SingleSelect from '../../Components/SingleSelect';
+import SingleSelect from '../../Components/InputComponent/SingleSelect';
 import swal from 'sweetalert';
 import '../commonStyle.css';
 import Validators from '../../HelperComponents/Validators';
+import Loader from '../../Components/Loader/Loader';
+import moment from 'moment';
 
 export default class StoreManager extends Component {
   constructor(props) {
@@ -16,6 +18,7 @@ export default class StoreManager extends Component {
       roles: [],
       department: null,
       phoneNumber:null,
+      isLoading:false,
       selectedStore:{},
       password: null,
       confirmPassword: null,
@@ -42,6 +45,16 @@ export default class StoreManager extends Component {
           Header: "Store",
           accessor: "store",
           Cell: (d) => this.viewDepartment(d)
+        },
+        {
+          Header: "CreatedBy",
+          accessor: "createdBy",
+          Cell: (d) => <p> {d.original?.createdBy?.firstName} {d.original?.createdBy?.lastName} </p>
+        },
+        {
+          Header: "CreatedAt",
+          accessor: "createdAt",
+          Cell: (d) => <p>{moment(d.original?.createdAt).format("MMM Do YYYY")}</p>,
         },
         {
           Header: "Edit",
@@ -85,6 +98,7 @@ export default class StoreManager extends Component {
       index: d.index,
       firstName: value.firstName,
       lastName: value.lastName,
+      phoneNumber:value.phoneNumber,
       email: value.email,
       editId: value._id,
       selectedStore,
@@ -121,13 +135,17 @@ export default class StoreManager extends Component {
         .then(async (willDelete) => {
 
           if (willDelete) {
-            const result = await Bridge.deleteUser({ _id: value.original._id })
-            if (result.status === 200) {
-              this.setState({ adminData: Data });
-              swal("Poof! Your Data has been deleted!", {
-                icon: "success",
-              });
-            }
+             await Bridge.deleteUser({ _id: value.original._id },result=>{
+
+               if (result.status === 200) {
+                 this.setState({ adminData: Data });
+                 swal("Poof! Your Data has been deleted!", {
+                   icon: "success",
+                 });
+               }else{
+                 swal(result.message);
+               }
+            })
 
           } else {
             swal("Your Data  is safe!");
@@ -142,7 +160,9 @@ export default class StoreManager extends Component {
 
   async componentDidMount() {
     try {
+      this.setState({ isLoading :true })
       await this.commonFunction();
+      this.setState({ isLoading :false })
     } catch (error) {
       console.log(error);
     }
@@ -150,47 +170,63 @@ export default class StoreManager extends Component {
 
   commonFunction=async()=>{
     try {
-      const rolesData = await Bridge.getUserRole();
-      if (rolesData.status === 200) {
-        let roles = [];
-        rolesData.data.map(item => {
-          if (item.name == 'store_manager') {
-            roles.push(item._id);
-          }
-          this.setState({
-            roles
-          })
-        })
-      };
-      
-      const adminUser = await Bridge.getUserData(`?role=${this.state.roles[0]}`);
-      if (adminUser.status == 200) {
-        this.setState({
-          adminData: adminUser.data
-          })
-      };
+       await Bridge.getUserRole(rolesData=>{
 
-      const storeData = await Bridge.getStores();
-      if (storeData.status == 200) {
-        let storeList = [];
-        if (storeData.data.length) {
-          storeData.data.map(ival => {
-            storeList.push({ value: ival._id, label: ival.name })
-          });
+        if (rolesData.status === 200) {
+          let roles = [];
+          rolesData.data.map(item => {
+            if (item.name == 'store_manager') {
+              roles.push(item._id);
+            }
+            this.setState({
+              roles
+            })
+          })
+        }else{
+          swal(rolesData.message)
         }
-        this.setState({ storeList })
-      }
+      });
       
-      const result = await Bridge.getDepartments();
-      if (result.status === 200) {
-        let department = [];
-        if (result.data.length) {
-          result.data.map(ival => {
-            department.push({ value: ival._id, label: ival.name })
-          });
+       await Bridge.getUserData(`?role=${this.state.roles[0]}`,adminUser=>{
+
+         if (adminUser.status == 200) {
+           this.setState({
+             adminData: adminUser.data
+             })
+         }else{
+           swal(adminUser.message)
+         }
+       });
+
+       await Bridge.getStores(storeData=>{
+
+         if (storeData.status == 200) {
+           let storeList = [];
+           if (storeData.data.length) {
+             storeData.data.map(ival => {
+               storeList.push({ value: ival._id, label: ival.name })
+             });
+           }
+           this.setState({ storeList })
+         }else{
+           swal(storeData.message)
+         }
+       });
+      
+      await Bridge.getDepartments(result=>{
+
+        if (result.status === 200) {
+          let department = [];
+          if (result.data.length) {
+            result.data.map(ival => {
+              department.push({ value: ival._id, label: ival.name })
+            });
+          }
+          this.setState({ department })
+        }else{
+          swal(result.message)
         }
-        this.setState({ department })
-      }
+      });
     } catch (error) {
       console.log(error);
     }
@@ -260,22 +296,30 @@ export default class StoreManager extends Component {
       formdata.lastName = lastName;
       formdata.email = email;
       formdata.store = selectedStore.value;
+      formdata.phoneNumber=phoneNumber;
       formdata.roles = roles;
       formdata.password = password;
-      const result = await Bridge.addUserRole(formdata);
-      if (result.status === 200) {
-        this.setState({
-          firstName: '',
-          lastName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          roles: [],
-          selectedDepartment: {},
-         });
-         await this.commonFunction();
-        swal('Store Manager added successfully');
-      }
+      this.setState({ isLoading:true })
+      await Bridge.addUserRole(formdata, async result => {
+        if (result.status === 200) {
+          this.setState({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            phoneNumber: '',
+            selectedStore: {},
+            roles: [],
+            selectedDepartment: {},
+          });
+          await this.commonFunction();
+          swal('Store Manager added successfully');
+        } else {
+          swal(result.message)
+        }
+        this.setState({ isLoading:false })
+      });
     } catch (error) {
       console.log(error)
     }
@@ -332,24 +376,31 @@ export default class StoreManager extends Component {
       formdata._id = editId;
       formdata.phoneNumber=phoneNumber;
       formdata.store = selectedStore.value;
+      this.setState({ isLoading:true });
+      await Bridge.updateUserRole(formdata,async result=>{
 
-      const result = await Bridge.updateUserRole(formdata);
-      if(result.status===200){
-        this.setState({
-          firstName: '',
-          lastName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          roles: [],
-          selectedDepartment: {},
-           adminButtonState:true,
-           phoneNumber:'',
-           selectedStore:{}
-        });
-        await this.commonFunction()
-        swal('Store Manager updated successfully');
-      }
+        if(result.status===200){
+          this.setState({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            roles: [],
+            selectedDepartment: {},
+            phoneNumber:{},
+            selectedStore:{},
+             adminButtonState:true,
+             phoneNumber:'',
+             selectedStore:{}
+          });
+          await this.commonFunction()
+          swal('Store Manager updated successfully');
+        }else{
+          swal(result.message);
+        };
+        this.setState({ isLoading:false })
+      });
 
     } catch (error) {
       console.log(error);
@@ -360,6 +411,7 @@ export default class StoreManager extends Component {
     const { adminButtonState } = this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null } 
         <div class="main-content">
           <section class="section">
             <div class="section-body">

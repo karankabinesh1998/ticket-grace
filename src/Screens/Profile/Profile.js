@@ -5,6 +5,7 @@ import Validators from '../../HelperComponents/Validators';
 import swal from 'sweetalert';
 import './profile.css'
 import SelectImage from '../../Components/Media/SelectImage';
+import Loader from '../../Components/Loader/Loader';
 
 export default class Profile extends Component {
   constructor(props) {
@@ -20,13 +21,20 @@ export default class Profile extends Component {
       currentPassword:'',
       password:'',
       confirmPassword:'',
-      profileImagePreview:null
+      profileImagePreview:null,
+      isLoading:false
     }
   }
 
   async componentDidMount(){
     try {
+      this.setState({
+        isLoading:true
+      })
       await this.commonFunction();
+      this.setState({
+        isLoading:false
+      })
     } catch (error) {
       console.log(error);
     }
@@ -84,7 +92,12 @@ export default class Profile extends Component {
       formdata.append("currentPassword",currentPassword)
       formdata.append("password",password)
       }
-      formdata.append("profileImage",profileImage)
+      if(profileImage !== null){
+      formdata.append("profileImage",profileImage);
+      }
+      this.setState({
+        isLoading:true
+      })
 
       const result = await Bridge.updateProfile(formdata);
 
@@ -100,7 +113,9 @@ export default class Profile extends Component {
         let setLocal = this.state.userDetail;
         setLocal.profileImageUrl = result?.data?.profileImageUrl;
         localStorage.setItem("userDetail",JSON.stringify(setLocal));
-        console.log(localStorage.getItem("userDetail"))
+        this.setState({
+          isLoading:false
+        })
         swal("Profile updated successfully");
       }
       
@@ -126,7 +141,6 @@ export default class Profile extends Component {
     try {
       const result = await Bridge.getProfile();
       if(result.status===200){
-        console.log('object',result.data);
         if(result?.data){
           this.setState({
             firstName:result?.data?.firstName,
@@ -150,7 +164,6 @@ export default class Profile extends Component {
   }
 
   handleImageFile=async(e)=>{
-    console.log(e);
     this.setState({
       profileImage : e
     })
@@ -164,9 +177,10 @@ export default class Profile extends Component {
    }
 
   render() {
-    const { firstName , lastName ,phoneNumber,email,userDetail }=this.state;
+    const { firstName , lastName ,userDetail }=this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null }
         <div class="main-content">
           <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" />
           <div class="container">
@@ -277,6 +291,7 @@ export default class Profile extends Component {
                                            placeholder="Enter the current password"
                                            onChange={this.handleChange}
                                            value={this.state.currentPassword}
+                                           autoComplete='new-password' 
                                            name="currentPassword"
                                           />
                                         </div>

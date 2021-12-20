@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
 import Bridge from '../../Middleware/Bridge';
 import Datatable from "../../Components/Datatable/Datatable";
-import SingleSelect from '../../Components/SingleSelect';
+import SingleSelect from '../../Components/InputComponent/SingleSelect';
 import swal from 'sweetalert';
 import '../commonStyle.css';
 import Validators from '../../HelperComponents/Validators';
+import Loader from '../../Components/Loader/Loader';
+import moment from 'moment';
 
 export default class Worker extends Component {
   constructor(props) {
@@ -17,6 +19,7 @@ export default class Worker extends Component {
       password: null,
       confirmPassword: null,
       workerData: [],
+      isLoading:false,
       workerButtonState: true,
       selectedDepartment: {},
       selectedStore:{},
@@ -46,6 +49,16 @@ export default class Worker extends Component {
           Header: "Department",
           accessor: "department",
           Cell: (d) => this.viewDepartment(d)
+        },
+        {
+          Header: "CreatedBy",
+          accessor: "createdBy",
+          Cell: (d) => <p> {d.original?.createdBy?.firstName} {d.original?.createdBy?.lastName} </p>
+        },
+        {
+          Header: "CreatedAt",
+          accessor: "createdAt",
+          Cell: (d) => <p>{moment(d.original?.createdAt).format("MMM Do YYYY")}</p>,
         },
         {
           Header: "Edit",
@@ -149,41 +162,55 @@ export default class Worker extends Component {
 
   async componentDidMount() {
     try {
-      await this.commonFunction()
+      this.setState({ isLoading:true })
+      await this.commonFunction();
+      this.setState({ isLoading:false })
     } catch (error) {
       console.log(error);
     }
   }
 
   commonFunction = async () => {
-    const workerUser = await Bridge.getWorker();
-    if (workerUser.status == 200) {
-      this.setState({
-        workerData: workerUser.data
-      })
-    };
+    await Bridge.getWorker(null,workerUser=>{
 
-    const storeData = await Bridge.getStores();
-    if (storeData.status == 200) {
-      let storeList = [];
-      if (storeData.data.length) {
-        storeData.data.map(ival => {
-          storeList.push({ value: ival._id, label: ival.name })
-        });
+      if (workerUser.status == 200) {
+        this.setState({
+          workerData: workerUser.data
+        })
+      }else{
+        swal(workerUser.message)
       }
-      this.setState({ storeList })
-    }
+    });
 
-    const result = await Bridge.getDepartments();
-    if (result.status === 200) {
-      let department = [];
-      if (result.data.length) {
-        result.data.map(ival => {
-          department.push({ value: ival._id, label: ival.name })
-        });
+    await Bridge.getStores(storeData=>{
+
+      if (storeData.status == 200) {
+        let storeList = [];
+        if (storeData.data.length) {
+          storeData.data.map(ival => {
+            storeList.push({ value: ival._id, label: ival.name })
+          });
+        }
+        this.setState({ storeList })
+      }else{
+        swal(storeData.message)
       }
-      this.setState({ department })
-    }
+    });
+
+    await Bridge.getDepartments(result=>{
+
+      if (result.status === 200) {
+        let department = [];
+        if (result.data.length) {
+          result.data.map(ival => {
+            department.push({ value: ival._id, label: ival.name })
+          });
+        }
+        this.setState({ department })
+      }else{
+        swal(result.message)
+      }
+    });
   }
 
   handleChange = async (e) => {
@@ -237,18 +264,6 @@ export default class Worker extends Component {
       swal('Please enter the valid email id')
       return;
     }
-    if (!password) {
-      swal('Please enter the password')
-      return;
-    }
-    if (!confirmPassword) {
-      swal('Please enter the confirm password')
-      return;
-    }
-    if (password !== confirmPassword) {
-      swal('confirm password does not match the password')
-      return;
-    }
 
     try {
       const formdata = {};
@@ -258,22 +273,27 @@ export default class Worker extends Component {
       formdata.department = selectedDepartment.value;
       formdata.store = selectedStore.value;
       formdata.phoneNumber = phoneNumber;
-      formdata.password = password;
-      const result = await Bridge.addWorker(formdata);
-      if (result.status === 200) {
-         this.setState({
-          firstName: '',
-          lastName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-          selectedDepartment: {},
-          selectedStore:{},
-          phoneNumber:'',
-         });
-         await this.commonFunction();
-        swal('Worker added successfully');
-      }
+      this.setState({ isLoading :true })
+      await Bridge.addWorker(formdata,async result=>{
+
+        if (result.status === 200) {
+           this.setState({
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            selectedDepartment: {},
+            selectedStore:{},
+            phoneNumber:'',
+           });
+           await this.commonFunction();
+          swal('Worker added successfully');
+        }else{
+          swal(result.message)
+        }
+        this.setState({ isLoading :false })
+      });
     } catch (error) {
       console.log(error)
     }
@@ -312,18 +332,7 @@ export default class Worker extends Component {
       swal('Please enter the valid email id')
       return;
     }
-    // if (!password) {
-    //   swal('Please enter the password')
-    //   return;
-    // }
-    // if (!confirmPassword) {
-    //   swal('Please enter the confirm password')
-    //   return;
-    // }
-    // if (password !== confirmPassword) {
-    //   swal('confirm password does not match the password')
-    //   return;
-    // }
+  
     try {
 
       const formdata = {};
@@ -334,24 +343,29 @@ export default class Worker extends Component {
       formdata.store = selectedStore.value;
       formdata.department = selectedDepartment.value;
       formdata._id = editId;
+      this.setState({ isLoading :true })
+      await Bridge.editWorker(formdata,async result=>{
 
-      const result = await Bridge.editWorker(formdata);
-      if (result.status === 200) {
-        this.setState({
-          firstName: '',
-          lastName: '',
-          email: '',
-          phoneNumber:'',
-          password: '',
-          confirmPassword: '',
-          roles: [],
-          selectedDepartment: {},
-          selectedStore:{},
-           workerButtonState: true
-        })
-        await this.commonFunction();
-        swal('Worker updated successfully');
-      }
+        if (result.status === 200) {
+          this.setState({
+            firstName: '',
+            lastName: '',
+            email: '',
+            phoneNumber:'',
+            password: '',
+            confirmPassword: '',
+            roles: [],
+            selectedDepartment: {},
+            selectedStore:{},
+             workerButtonState: true
+          })
+          await this.commonFunction();
+          swal('Worker updated successfully');
+        }else{
+          swal(result.message)
+        }
+        this.setState({ isLoading :false })
+      });
 
     } catch (error) {
       console.log(error);
@@ -362,6 +376,7 @@ export default class Worker extends Component {
     const { workerButtonState } = this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null }
         <div class="main-content">
           <section class="section">
             <div class="section-body">
@@ -468,38 +483,6 @@ export default class Worker extends Component {
                         </div>
                         <div className="col-sm-3"></div>
                       </div>
-
-                      {/* <div className="row form-group">
-                        <div className="col-sm-2"></div>
-                        <div className="col-sm-2">
-                          <label class="labell2">Password</label>
-                        </div>
-                        <div className="col-sm-4">
-                          <input type="text"
-                            class="form-control"
-                            placeholder="Enter the password"
-                            onChange={this.handleChange}
-                            value={this.state.password}
-                            name="password" />
-                        </div>
-                        <div className="col-sm-3"></div>
-                      </div>
-
-                      <div className="row form-group">
-                        <div className="col-sm-2"></div>
-                        <div className="col-sm-2">
-                          <label class="labell2">Confirm Password</label>
-                        </div>
-                        <div className="col-sm-4">
-                          <input type="text"
-                            class="form-control"
-                            placeholder="Enter the confirm password"
-                            onChange={this.handleChange}
-                            value={this.state.confirmPassword}
-                            name="confirmPassword" />
-                        </div>
-                        <div className="col-sm-3"></div>
-                      </div> */}
 
                       <div class="row form-group">
                         <div className="col-sm-4"></div>

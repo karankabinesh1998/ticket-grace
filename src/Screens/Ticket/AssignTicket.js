@@ -3,8 +3,9 @@ import Bridge from '../../Middleware/Bridge';
 import Datatable from "../../Components/Datatable/Datatable";
 import swal from 'sweetalert';
 import '../commonStyle.css';
-import SingleSelect from '../../Components/SingleSelect';
+import SingleSelect from '../../Components/InputComponent/SingleSelect';
 import ModelWindow from '../../Components/Model';
+import Loader from '../../Components/Loader/Loader';
 
 export default class AssignTicket extends Component {
   constructor(props) {
@@ -15,6 +16,7 @@ export default class AssignTicket extends Component {
       ticketList:[],
       workerList:[],
       selectedStore:{},
+      isLoading:false,
       storeList:[],
       selectedticket:{},
       selectedWorker:{},
@@ -76,19 +78,23 @@ export default class AssignTicket extends Component {
     try {
       swal({
         title: "Are you sure?",
-        text: "Do you want to cancel this ticket to worker??",
+        text: "Do you want to cancel this ticket to worker?",
         icon: "warning",
         buttons: true,
         dangerMode: true,
       })
         .then(async (willDelete) => {
           if (willDelete) {
-            const result = await Bridge.cancelAssignTicket({ _id: d.original._id });
-            if (result.status == 200) {
-              await this.getStoreList();
-              await this.getTicketList();
-              swal("Ticket cancelled successfully")
-            }
+            await Bridge.cancelAssignTicket({ _id: d.original._id },async result=>{
+              if (result.status == 200) {
+                await this.getStoreList();
+                await this.getTicketData();
+                swal("Ticket cancelled successfully")
+              }else{
+                swal(result.message)
+              }
+
+            });
           } else {
             swal("Cancel failed!!")
           }
@@ -139,55 +145,74 @@ export default class AssignTicket extends Component {
 
   async componentDidMount() {
     try {
+      this.setState({ isLoading:true });
       await this.getStoreList();
-      await this.getTicketList();
-      // await this.getWorkerList();
+      await this.getTicketData()
+      this.setState({ isLoading:false })
     } catch (error) {
       console.log(error);
     }
   };
 
-  getStoreList =async()=>{
+  getStoreList = async () => {
     try {
-      const store = await Bridge.getStores();
-      if(store.status===200){
-          if(store.data.length){
-            let storeList=  []
-            store.data.map((store)=>{
-              storeList.push({ value:store._id,label:store.name })
+      await Bridge.getStores(store => {
+        if (store.status === 200) {
+          if (store.data.length) {
+            let storeList = []
+            store.data.map((store) => {
+              storeList.push({ value: store._id, label: store.name })
             });
 
             this.setState({
               storeList
             })
           }
-      }
+        } else {
+          swal(store.message)
+        }
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  getTicketData = async()=>{
+    try {
+      await Bridge.getTicket(`?status=assigned`,ticketAssigned=>{
+
+        if(ticketAssigned.status===200){
+          console.log(ticketAssigned,'tts')
+          this.setState({
+            ticketsData : ticketAssigned.data
+          })
+        }else{
+          swal(ticketAssigned.message)
+        }
+      });
     } catch (error) {
       console.log(error);
     }
   }
 
-  getTicketList = async () => {
+  getTicketList = async (storeId) => {
     try {
       let ticketList = [];
-      const ticketOpened = await Bridge.getTicket(`?status=open`);
-      if (ticketOpened.status === 200) {
-        if (ticketOpened.data.length) {
-          ticketOpened.data.map(ticket => {
-            ticketList.push({ value: ticket._id, label: ticket.title });
+      await Bridge.getTicket(`?status=open&store=${storeId}`,async ticketOpened=>{
+
+        if (ticketOpened.status === 200) {
+          if (ticketOpened.data.length) {
+            ticketOpened.data.map(ticket => {
+              ticketList.push({ value: ticket._id, label: ticket.title });
+            })
+          }
+          this.setState({
+            ticketList
           })
+        }else{
+          swal(ticketOpened.message)
         }
-      const ticketAssigned = await Bridge.getTicket(`?status=assigned`);
-      if(ticketAssigned.status===200){
-        console.log(ticketAssigned,'tts')
-        this.setState({
-          ticketsData : ticketAssigned.data
-        })
-      }
-        this.setState({
-          ticketList
-        })
-      }
+      });
     } catch (error) {
       console.log(error);
     }
@@ -195,20 +220,24 @@ export default class AssignTicket extends Component {
 
   getWorkerList = async (store,ticket) => {
     try {
-      const worker = await Bridge.getWorker(`?store=${store.value}&ticket=${ticket.value}`);
-      if (worker.status === 200) {
-        let workerList = [];
-        if (worker.data.length) {
-          worker.data.map(worker => {
-            workerList.push({ label: `${worker?.firstName} ${worker?.lastName}`, value: worker._id })
-          });
-          this.setState({
-            workerList
-          })
+      await Bridge.getWorker(`?store=${store.value}&ticket=${ticket.value}`,worker=>{
+
+        if (worker.status === 200) {
+          let workerList = [];
+          if (worker.data.length) {
+            worker.data.map(worker => {
+              workerList.push({ label: `${worker?.firstName} ${worker?.lastName}`, value: worker._id })
+            });
+            this.setState({
+              workerList
+            })
+          }else{
+            swal("No workers found on this store or department")
+          }
         }else{
-          swal("No workers found on this store or department")
+          swal(worker.message)
         }
-      }
+      });
     } catch (error) {
       console.log(error);
     }
@@ -217,17 +246,18 @@ export default class AssignTicket extends Component {
   handleWorkerList = async (e) => { this.setState({ selectedWorker: e })  };
 
   handleTicketList = async (e) => {
-     this.setState({ selectedticket: e })
+     this.setState({ selectedticket: e , selectedWorker:{} })
      if(Object.keys(this.state.selectedStore).length>0){
       await this.getWorkerList(this.state.selectedStore,e);
-   }
+    }
     };
 
   handleStoreList = async (e) => { 
-    this.setState({ selectedStore: e })
-    if(Object.keys(this.state.selectedticket).length>0){
-       await this.getWorkerList(e,this.state.selectedticket);
-    }
+    this.setState({ selectedStore: e , selectedWorker:{} });
+    await this.getTicketList(e.value);
+    // if(Object.keys(this.state.selectedticket).length>0){
+    //    await this.getWorkerList(e,this.state.selectedticket);
+    // }
   };
 
   assignTicketToWorker=async()=>{
@@ -254,26 +284,36 @@ export default class AssignTicket extends Component {
       formdata.workerId = selectedWorker.value;
       swal({
         title: "Are you sure?",
-        text: "Do you want to assign this task??",
+        text: "Do you want to assign this task?",
         icon: "warning",
         buttons: true,
         dangerMode: true,
       })
         .then(async (willDelete) => {
           if (willDelete) {
-            const result = await Bridge.assignTicket(formdata);
-            if (result.status === 200) {
-              console.log(result);
-              this.setState({
-                selectedticket: {},
-                selectedWorker: {},
-              });
-              swal("Tickets assigned successfully")
-              await this.getWorkerList();
-              await this.getTicketList();
-            } else {
-              swal("Ticket assign cancelled")
-            }
+            const result = await Bridge.assignTicket(formdata,async result=>{
+                this.setState({
+                  isLoading:true
+                })
+              if (result.status === 200) {
+                console.log(result);
+                this.setState({
+                  selectedticket: {},
+                  selectedWorker: {},
+                  selectedStore:{}
+                });
+                await this.getStoreList();
+                await this.getTicketData();
+                this.setState({
+                  isLoading:false
+                })
+                swal("Tickets assigned successfully");
+              } else {
+               swal(result.message)
+              }
+            });
+          }else{
+            swal("Ticket assign cancelled")
           }
         })
     } catch (error) {
@@ -285,6 +325,7 @@ export default class AssignTicket extends Component {
     const { ticketButtonState , ticketObject , workerObject } = this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null }
         <div class="main-content">
           <ModelWindow
             ButtonTitle={"Worker Details"}
@@ -359,7 +400,7 @@ export default class AssignTicket extends Component {
                         </div>
                       </div>
 
-                      <div className="row form-group">
+                      {Object.keys(this.state.selectedStore).length >0 ? <div className="row form-group">
                         <div className="col-sm-2"></div>
                         <div className="col-sm-2">
                           <label class="labell2">Select Ticket</label>
@@ -371,7 +412,7 @@ export default class AssignTicket extends Component {
                             selectedService={this.state.selectedticket}
                           />
                         </div>
-                      </div>
+                      </div> : null}
 
                     {Object.keys(this.state.selectedStore).length >0 && Object.keys(this.state.selectedticket).length >0 ? 
                     

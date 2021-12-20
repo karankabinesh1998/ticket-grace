@@ -3,6 +3,7 @@ import { FiAlignJustify } from "react-icons/fi";
 import { BiFullscreen } from "react-icons/bi";
 import Bridge from '../../Middleware/Bridge';
 import swal from 'sweetalert';
+import { FaUserCircle } from 'react-icons/fa';
 
 export default class Header extends Component {
   constructor(props) {
@@ -77,8 +78,14 @@ export default class Header extends Component {
 
             <li class="dropdown"><a href="#" data-toggle="dropdown"
               class="nav-link dropdown-toggle nav-link-lg nav-link-user">
-              <img alt="image" src={this.state.image} width={30} height={30}
-               class="user-img-radious-style" />
+                {
+                  this.state.image ? 
+
+                  <img alt="image" src={this.state.image} width={30} height={30}
+                   class="user-img-radious-style" /> :
+
+                   <FaUserCircle size={30} style={{ width: '25px', color: 'black' }} />
+                }
               <span class="d-sm-none d-lg-inline-block"></span></a>
               <div class="dropdown-menu dropdown-menu-right pullDown">
               <div class="dropdown-title">Role : {roles?.name}</div>

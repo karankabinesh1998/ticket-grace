@@ -2,11 +2,14 @@ import React, { Component } from 'react';
 import Datatable from '../../Components/Datatable/Datatable';
 import Bridge from '../../Middleware/Bridge';
 import swal from 'sweetalert';
-// import '../commonStyle.css';
+import RadioButtonComponent from '../../Components/InputComponent/RadioButtonInput';
 import './evaluation.css';
 import moment from 'moment';
 import ModelWindow from '../../Components/Model';
-import ReactStars from "react-rating-stars-component";
+import $ from "jquery";
+import Loader from '../../Components/Loader/Loader';
+
+
 
 
 export default class Evaluation extends Component {
@@ -19,6 +22,20 @@ export default class Evaluation extends Component {
       evaluateTicketId:null,
       editId: null,
       currentRating:0,
+      isLoading:false,
+      OptionsList: [
+        { label: 'Good', value: 2 },
+        { label: 'Fair', value: 1 },
+        { label: 'Not Satisfactory', value: 0 },
+      ],
+      scoreObject:{
+        customer_service : null,
+        merchandising_product_display:null,
+        stock_check : null,
+        store_maintainance :null,
+        employee_management:null,
+        downline_development:null  
+      },
       column: [
         {
           Header: "Store",
@@ -81,20 +98,27 @@ export default class Evaluation extends Component {
     })
   };
 
-  EvaluatedTicket=async()=>{
-    const { evaluateTicketId , currentRating } = this.state;
 
+  EvaluatedTicket=async()=>{
+    const { evaluateTicketId , scoreObject } = this.state;
     try {
       let formdata ={};
-      formdata.score = currentRating;
+      formdata.scores = scoreObject;
       formdata.ticketId =evaluateTicketId;
-      const result = await Bridge.postEvaluation(formdata);
-      if(result.status===200){
-        this.setState({
-          evaluateTicketId : null,
-        })
-        swal("successfully rated the ticket")
-      }
+      const result = await Bridge.postEvaluation(formdata,async result=>{
+
+        if(result.status===200){
+          this.setState({
+            evaluateTicketId : null,
+          });
+          await this.getTickets();
+          swal("successfully rated the ticket")
+          window.location.reload();
+        }else{
+          swal(result.message);
+          window.location.reload();
+        }
+      });
     } catch (error) {
       console.log(error);
     }
@@ -141,43 +165,7 @@ export default class Evaluation extends Component {
     )
   };
 
-  closeTicket = async () => {
-    const { closeDescription } = this.state;
-    if (!closeDescription) {
-      swal("Please enter the description")
-      return
-    }
-    try {
 
-      swal({
-        title: "Are you sure?",
-        text: "Do you want to close this ticket??",
-        icon: "warning",
-        buttons: true,
-        dangerMode: true,
-      })
-        .then(async (willDelete) => {
-          if (willDelete) {
-            const result = await Bridge.closeAssignTicket({ _id: this.state.editId });
-            if (result.status === 200) {
-              await this.getTickets();
-
-              this.setState({
-                closeDescription: '',
-                editId: null
-              });
-
-              swal("Tickets close successfully")
-            }
-          } else {
-            swal(" Cancelled ")
-          }
-        })
-
-    } catch (error) {
-      console.log(error);
-    }
-  }
 
   storeColumn = (d) => {
     return <p>{d.original.store.name}</p>
@@ -189,7 +177,9 @@ export default class Evaluation extends Component {
 
   async componentDidMount() {
     try {
+      this.setState({ isLoading:true })
       await this.getTickets();
+      this.setState({ isLoading:false })
     } catch (error) {
       console.log(error);
     }
@@ -197,13 +187,17 @@ export default class Evaluation extends Component {
 
   getTickets = async () => {
     try {
-      const result = await Bridge.getTicket(`?status=close&isEvaluated=false`);
+      const result = await Bridge.getTicket(`?status=close&isEvaluated=false`, result => {
 
-      if (result.status === 200) {
-        this.setState({
-          ticketsData: result.data
-        })
-      }
+        if (result.status === 200) {
+          this.setState({
+            ticketsData: result.data
+          })
+        } else {
+          swal(result.message)
+        }
+      });
+
     } catch (error) {
       console.log(error);
     }
@@ -211,12 +205,22 @@ export default class Evaluation extends Component {
 
   handleChange = async (e) => { this.setState({ [e.target.name]: e.target.value }) };
 
-  ratingChanged=async(e)=>{ this.setState({ currentRating : e }) }
+  ratingChanged=async(e)=>{ this.setState({ currentRating : e }) };
+
+  handleChangeRadio = async (name, e) => {
+    const storedata = { ...this.state.scoreObject };
+    storedata[name] = e;
+    this.setState({
+      scoreObject: storedata
+    });
+
+  }
 
   render() {
-    const { workerObject, ticketObject  , currentRating} = this.state;
+    const { workerObject, ticketObject  , scoreObject } = this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null }
         <div class="main-content">
           <ModelWindow
             ButtonTitle={"Evaluate Ticket"}
@@ -226,20 +230,75 @@ export default class Evaluation extends Component {
             ButtonBody={
             <React.Fragment>
                 <div className="row form-group">
-                  <div className="col-sm-2" />
-                  <div className="col-sm-3">
-                    <label class="labelRating">Ratings</label>
+                   <div className="col-sm-4">
+                    <label class="labelRating">Customer Service*</label>
                   </div>
-                  <div className="col-sm-7">
-                    <ReactStars
-                       size={40}
-                       count={5}
-                       isHalf={false}
-                       value= {currentRating}
-                       color={"blue"}
-                       activeColor= {"red"}
-                       onChange = {this.ratingChanged} 
-                     />
+                  <div className="col-sm-8">
+                    <RadioButtonComponent
+                      OptionsList={this.state.OptionsList}
+                      handleChangeRadio={this.handleChangeRadio} 
+                      name ={"customer_service"}
+                      />
+                  </div>
+                </div>
+                <div className="row form-group">
+                   <div className="col-sm-4">
+                    <label class="labelRating">Merchandising-product display*</label>
+                  </div>
+                  <div className="col-sm-8">
+                    <RadioButtonComponent
+                      OptionsList={this.state.OptionsList}
+                      handleChangeRadio={this.handleChangeRadio} 
+                      name ={"merchandising_product_display"}
+                      />
+                  </div>
+                </div>
+                <div className="row form-group">
+                   <div className="col-sm-4">
+                    <label class="labelRating">Stock Check*</label>
+                  </div>
+                  <div className="col-sm-8">
+                    <RadioButtonComponent
+                      OptionsList={this.state.OptionsList}
+                      handleChangeRadio={this.handleChangeRadio} 
+                      name ={"stock_check"}
+                      />
+                  </div>
+                </div>
+                <div className="row form-group">
+                   <div className="col-sm-4">
+                    <label class="labelRating">Store Maintainance*</label>
+                  </div>
+                  <div className="col-sm-8">
+                    <RadioButtonComponent
+                      OptionsList={this.state.OptionsList}
+                      handleChangeRadio={this.handleChangeRadio} 
+                      name ={"store_maintainance"}
+                      />
+                  </div>
+                </div>
+                <div className="row form-group">
+                   <div className="col-sm-4">
+                    <label class="labelRating">Employee Management*</label>
+                  </div>
+                  <div className="col-sm-8">
+                    <RadioButtonComponent
+                      OptionsList={this.state.OptionsList}
+                      handleChangeRadio={this.handleChangeRadio} 
+                      name ={"employee_management"}
+                      />
+                  </div>
+                </div>
+                <div className="row form-group">
+                   <div className="col-sm-4">
+                    <label class="labelRating">Downline Development*</label>
+                  </div>
+                  <div className="col-sm-8">
+                    <RadioButtonComponent
+                      OptionsList={this.state.OptionsList}
+                      handleChangeRadio={this.handleChangeRadio} 
+                      name ={"downline_development"}
+                      />
                   </div>
                 </div>
                 <div class="row form-group">
@@ -248,7 +307,6 @@ export default class Evaluation extends Component {
                     <button type="button"
                       style={{ width: '100%' }}
                       onClick={this.EvaluatedTicket}
-                      // data-dismiss="modal"
                       class="btn btn-success m-t-15 waves-effect">
                       {"Submit"}
                     </button>
@@ -258,42 +316,7 @@ export default class Evaluation extends Component {
             </React.Fragment>
             }
           />
-          <ModelWindow
-            ButtonTitle={"Close Ticket"}
-            ButtonName={"Close Ticket"}
-            id="closeTicket"
-            indexStyle={{ color: "black", fontWeight: '500' }}
-            ButtonBody={
-              <React.Fragment>
-                <div className="row form-group">
-                  <div className="col-sm-3">
-                    <label class="labell2">Description</label>
-                  </div>
-                  <div className="col-sm-8">
-                    <textarea type="text"
-                      class="form-control"
-                      placeholder="Enter the description"
-                      onChange={this.handleChange}
-                      value={this.state.closeDescription}
-                      name="closeDescription"></textarea>
-                  </div>
-                </div>
-                <div class="row form-group">
-                  <div className="col-sm-4"></div>
-                  <div className="col-sm-4">
-                    <button type="button"
-                      style={{ width: '100%' }}
-                      onClick={this.closeTicket}
-                      class="btn btn-primary m-t-15 waves-effect">
-                      {"Close Ticket"}
-                    </button>
-                  </div>
-                  <div className="col-sm-4"></div>
-                </div>
-              </React.Fragment>
-            }
-          />
-
+         
           <ModelWindow
             ButtonTitle={"Worker Details"}
             ButtonName={"Worker Details"}

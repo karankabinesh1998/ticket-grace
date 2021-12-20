@@ -1,21 +1,76 @@
 import React, { Component } from 'react'
+import swal from 'sweetalert';
+import Loader from '../../Components/Loader/Loader';
+import Bridge from '../../Middleware/Bridge';
 
 export default class Dashboard extends Component {
+  constructor(props){
+    super(props);
+    this.state={
+      openTicket : 0,
+      closeTicket : 0,
+      isLoading:false
+    }
+  }
+
+  async componentDidMount(){
+    try {
+      this.setState({ isLoading : true })
+      await this.getDashBoardData();
+      this.setState({ isLoading : false })
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  getDashBoardData = async () => {
+    try {
+      await Bridge.getDashboard(result => {
+        if (result.status === 200) {
+          if (result?.data.length) {
+           let wait = result?.data.map(ticket => {
+              if (ticket.status == 'open') {
+                this.setState({ openTicket: ticket.count })
+              } else if (ticket.status == 'close') {
+                this.setState({ closeTicket: ticket.count })
+              }
+            })
+          }
+        } else {
+          swal(result.message)
+        }
+        console.log(result.data);
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  goToHistory=async()=>{
+    window.location.href='/tickets-history'
+  };
+
+  goToActiveTicket=async()=>{
+    window.location.href='/view-tickets'
+  }
+
     render() {
         return (
+          <React.Fragment>
+            {this.state.isLoading ? <Loader /> : null }
             <div class="main-content">
         <section class="section">
           <div class="row ">
-            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-xs-12">
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-xs-12" style={{ cursor:'pointer' }} onClick={this.goToActiveTicket} >
               <div class="card">
                 <div class="card-statistic-4">
                   <div class="align-items-center justify-content-between">
                     <div class="row ">
                       <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pr-0 pt-3">
                         <div class="card-content">
-                          <h5 class="font-15">New Booking</h5>
-                          <h2 class="mb-3 font-18">258</h2>
-                          <p class="mb-0"><span class="col-green">10%</span> Increase</p>
+                          <h5 class="font-15">New Tickets</h5>
+                          <h2 class="mb-3 font-22">{this.state.openTicket}</h2>
+                          {/* <p class="mb-0"><span class="col-green">10%</span> Increase</p> */}
                         </div>
                       </div>
                       <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pl-0">
@@ -28,16 +83,16 @@ export default class Dashboard extends Component {
                 </div>
               </div>
             </div>
-            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-xs-12">
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 col-xs-12" style={{ cursor:'pointer' }} onClick={()=>this.goToHistory()} >
               <div class="card">
                 <div class="card-statistic-4">
                   <div class="align-items-center justify-content-between">
                     <div class="row ">
                       <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pr-0 pt-3">
                         <div class="card-content">
-                          <h5 class="font-15"> Customers</h5>
-                          <h2 class="mb-3 font-18">1,287</h2>
-                          <p class="mb-0"><span class="col-orange">09%</span> Decrease</p>
+                          <h5 class="font-15"> Closed Tickets</h5>
+                          <h2 class="mb-3 font-18">{this.state.closeTicket}</h2>
+                          {/* <p class="mb-0"><span class="col-orange">09%</span> Decrease</p> */}
                         </div>
                       </div>
                       <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pl-0">
@@ -57,8 +112,8 @@ export default class Dashboard extends Component {
                     <div class="row ">
                       <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pr-0 pt-3">
                         <div class="card-content">
-                          <h5 class="font-15">New Project</h5>
-                          <h2 class="mb-3 font-18">128</h2>
+                          <h5 class="font-15">Dummy</h5>
+                          <h2 class="mb-3 font-18">000</h2>
                           <p class="mb-0"><span class="col-green">18%</span>
                             Increase</p>
                         </div>
@@ -80,8 +135,8 @@ export default class Dashboard extends Component {
                     <div class="row ">
                       <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 pr-0 pt-3">
                         <div class="card-content">
-                          <h5 class="font-15">Revenue</h5>
-                          <h2 class="mb-3 font-18">$48,697</h2>
+                          <h5 class="font-15">Dummy</h5>
+                          <h2 class="mb-3 font-18">$00,000</h2>
                           <p class="mb-0"><span class="col-green">42%</span> Increase</p>
                         </div>
                       </div>
@@ -497,6 +552,7 @@ export default class Dashboard extends Component {
           </div> */}
         </section>
       </div>
+      </React.Fragment>
         )
     }
 }

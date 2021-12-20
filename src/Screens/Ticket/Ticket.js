@@ -1,12 +1,13 @@
 import React, { Component } from 'react';
 import Datatable from '../../Components/Datatable/Datatable';
 import Bridge from '../../Middleware/Bridge';
-import SingleSelect from '../../Components/SingleSelect';
+import SingleSelect from '../../Components/InputComponent/SingleSelect';
 import swal from 'sweetalert';
 import '../commonStyle.css';
 import AudioRecorder from '../../Components/Audio/AudioRecorder';
 import moment from 'moment';
 import ModelWindow from '../../Components/Model';
+import Loader from '../../Components/Loader/Loader';
 
 export default class Ticket extends Component {
   constructor(props) {
@@ -26,6 +27,7 @@ export default class Ticket extends Component {
       storeList: [],
       index:null,
       editId:null,
+      isLoading:false,
       selectedStore: {},
       recordState: null,
       audioFile: null,
@@ -53,6 +55,11 @@ export default class Ticket extends Component {
           accessor: "status"
         },
         {
+          Header: "CreatedBy",
+          accessor: "createdBy",
+          Cell: (d) => <p> {d.original?.createdBy?.firstName} {d.original?.createdBy?.lastName} </p>
+        },
+        {
           Header: "Created At",
           accessor: "createdAt",
           Cell: (d) => this.createdAt(d)
@@ -62,11 +69,11 @@ export default class Ticket extends Component {
           accessor: "name",
           Cell: (d) => this.viewMediaModel(d)
         },
-        // {
-        //   Header: "Edit",
-        //   accessor: "name",
-        //   Cell: (d) => this.editTicket(d),
-        // },
+        {
+          Header: "Re-Open",
+          accessor: "name",
+          Cell: (d) => this.statusReOpen(d),
+        },
         {
           Header: "Delete",
           accessor: "delete",
@@ -91,6 +98,48 @@ export default class Ticket extends Component {
 
   departmentColumn = (d) => {
     return <p>{d.original.department.name}</p>
+  };
+
+  statusReOpen=(d)=>{
+    let value = d;
+    return (
+      <center>
+        <button
+          type="button"
+          className={d.original?.status !=='close' ? "btn btn-grey" : "btn btn-info" }
+          disabled={d.original?.status !=='close'}
+          onClick={() => this.reOpenTicket(value)}
+        >
+          Re-Open
+        </button>
+      </center>
+    );
+  };
+
+  reOpenTicket = async (d) => {
+    try {
+      swal({
+        title: "Are you sure?",
+        text: "Do you want to Re-open this Ticket !",
+        icon: "warning",
+        buttons: true,
+        dangerMode: true,
+      })
+        .then(async (willDelete) => {
+
+          if (willDelete) {
+            const result = await Bridge.cancelClosedTicket({ _id: d.original?._id });
+            if (result.status === 200) {
+              await this.getTicktesData();
+              swal("Ticket re-opened successfully");
+            }
+          }else{
+            swal("Cancelled!!");
+          }
+        })
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   editTicket = (d) => {
@@ -143,8 +192,7 @@ export default class Ticket extends Component {
   };
 
   openModelWindow = async (e) => {
-    console.log(e.original)
-    this.setState({
+   this.setState({
       viewImage_1: e.original.image_1,
       viewImage_2: e.original.image_2,
       viewImage_3: e.original.image_3,
@@ -158,6 +206,7 @@ export default class Ticket extends Component {
         <button
           type="button"
           className="btn btn-danger"
+          disabled={d.original?.status == 'assigned'}
           onClick={() => this.deletionTicket(d)}
         >
           Delete
@@ -181,14 +230,16 @@ export default class Ticket extends Component {
         .then(async (willDelete) => {
 
           if (willDelete) {
-            const result = await Bridge.deleteTicket({ _id: value.original._id })
-            if (result.status === 200) {
-              this.setState({ ticketsData: Data });
-              swal("Poof! Your Data has been deleted!", {
-                icon: "success",
-              });
-            }
-
+            await Bridge.deleteTicket({ _id: value.original._id },result=>{
+              if (result.status === 200) {
+                this.setState({ ticketsData: Data });
+                swal("Poof! Your Data has been deleted!", {
+                  icon: "success",
+                });
+              }else{
+                swal(result.message);
+              }
+            });
           } else {
             swal("Your Data  is safe!");
           }
@@ -202,31 +253,41 @@ export default class Ticket extends Component {
 
   async componentDidMount() {
     try {
+      this.setState({
+        isLoading : true
+      });
 
-      const result = await Bridge.getDepartments();
-      if (result.status === 200) {
-        let department = [];
-        if (result.data.length) {
-          result.data.map(ival => {
-            department.push({ value: ival._id, label: ival.name })
-          });
+      await Bridge.getDepartments(result => {
+        if (result.status === 200) {
+          let department = [];
+          if (result.data.length) {
+            result.data.map(ival => {
+              department.push({ value: ival._id, label: ival.name })
+            });
+          }
+          this.setState({ department })
+        } else {
+          swal(result.message)
         }
-        this.setState({ department })
-      }
-
-      const storeResult = await Bridge.getStores();
-      if (storeResult.status === 200) {
-        let storeList = [];
-        if (storeResult.data.length) {
-          storeResult.data.map(ival => {
-            storeList.push({ value: ival._id, label: ival.name })
-          });
+      });
+      
+      await Bridge.getStores(storeResult => {
+        if (storeResult.status === 200) {
+          let storeList = [];
+          if (storeResult.data.length) {
+            storeResult.data.map(ival => {
+              storeList.push({ value: ival._id, label: ival.name })
+            });
+          }
+          this.setState({ storeList })
         }
-        this.setState({ storeList })
-      }
+      });
+      
 
       await this.getTicktesData();
-
+      this.setState({
+        isLoading:false
+      })
     } catch (error) {
       console.log(error);
     }
@@ -234,11 +295,14 @@ export default class Ticket extends Component {
 
   getTicktesData = async () => {
     try {
-      const getTickets = await Bridge.getTicket();
-      if (getTickets.status == 200) {
-        console.log(getTickets.data[0], 'ticktes');
-        this.setState({ ticketsData: getTickets.data })
-      }
+      await Bridge.getTicket(null, (getTickets) => {
+
+        if (getTickets.status == 200) {
+          this.setState({ ticketsData: getTickets.data })
+        } else {
+          swal(getTickets.message)
+        }
+      });
     } catch (error) {
       console.log(error)
     }
@@ -269,7 +333,6 @@ export default class Ticket extends Component {
   handleChangeFile = async (index, e) => {
     const currentImageFiles = [...this.state.image];
     currentImageFiles[index] = { filename: e.target.files[0].name, file: e.target.files[0] }
-    console.log(e.target.files[0]);
     this.setState({
       image: currentImageFiles
     });
@@ -314,22 +377,28 @@ export default class Ticket extends Component {
         formdata.append(`image_${i + 1}`, ival.file);
       });
       formdata.append('description', description);
+      this.setState({
+        isLoading:true
+      })
+      await Bridge.addTicket(formdata,async(result)=>{
+        if (result.status == 200) {
 
-      const result = await Bridge.addTicket(formdata);
+         this.setState({
+            title: '',
+            description: '',
+            selectedDepartment: {},
+            selectedStore: {},
+            image: [{ filename: null, file: null }],
+            ticketsData: [result.data, ...this.state.ticketsData],
+            isLoading:false
+          });
+          swal('Ticket has successfully created !!')
+          await this.getTicktesData();
+        }else{
+          swal(result.message)
+        }
+      });
 
-      if (result.status == 200) {
-
-        this.setState({
-          title: '',
-          description: '',
-          selectedDepartment: {},
-          selectedStore: {},
-          image: [{ filename: null, file: null }],
-          ticketsData: [result.data, ...this.state.ticketsData]
-        });
-        await this.getTicktesData();
-        swal('Ticket has successfully created !!')
-      }
 
     } catch (error) {
       console.log(error);
@@ -372,6 +441,7 @@ export default class Ticket extends Component {
     const { ticketButtonState } = this.state;
     return (
       <React.Fragment>
+        {this.state.isLoading ? <Loader /> : null }
         <div class="main-content">
           <ModelWindow
             ButtonTitle={"Ticket Media"}
@@ -380,16 +450,20 @@ export default class Ticket extends Component {
             indexStyle={{ color: "black", fontWeight: '500' }}
             ButtonBody={
               <React.Fragment>
-                <div className="row form-group">
-                  <div className="col-sm-3">
-                    <label class="labell2">Image-1</label>
-                  </div>
-                  <div className="col-sm-4">
-                    <img src={this.state.viewImage_1} width={300} height={200} />
-                  </div>
-                  <div className="col-sm-3"></div>
-                </div>
-                <div className="row form-group">
+                {
+                  this.state?.viewImage_1 ?
+                    <div className="row form-group">
+                      <div className="col-sm-3">
+                        <label class="labell2">Image-1</label>
+                      </div>
+                      <div className="col-sm-4">
+                        <img src={this.state.viewImage_1} width={300} height={200} />
+                      </div>
+                      <div className="col-sm-3"></div>
+                    </div>
+                    : null
+                }
+                {this.state?.viewImage_2 ? <div className="row form-group">
                   <div className="col-sm-3">
                     <label class="labell2">Image-2</label>
                   </div>
@@ -397,8 +471,11 @@ export default class Ticket extends Component {
                     <img src={this.state.viewImage_2} width={300} height={200} />
                   </div>
                   <div className="col-sm-3"></div>
-                </div>
-                <div className="row form-group">
+                </div> :
+                  null
+                }
+
+                {this.state?.viewImage_3 ? <div className="row form-group">
                   <div className="col-sm-3">
                     <label class="labell2">Image-3</label>
                   </div>
@@ -406,7 +483,8 @@ export default class Ticket extends Component {
                     <img src={this.state.viewImage_3} width={300} height={200} />
                   </div>
                   <div className="col-sm-3"></div>
-                </div>
+                </div> : null
+                }
                 <div className="row form-group">
                   <div className="col-sm-3">
                     <label class="labell2">Audio</label>
