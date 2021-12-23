@@ -18,15 +18,15 @@ const userLogin = async (formdata, callback) => {
       'Content-Type': 'application/json',
     },
   }).then(async (response) => {
-    console.log(response);
     callback(response);
   })
     .catch(function (error) {
+      console.log(error);
       if (error.response) {
         callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" ? error.response.data?.error ? error.response.data?.error : "General server error" : "General server error" })
       }
     })
-}
+};
 
 const userLogOut = async (formdata={}) => {
   const result = await http.post(ACCESS_POINT + `/user/logout`, formdata, {
