@@ -34,7 +34,8 @@
     content:'';
     display:block;
     position:absolute;
-    left:48%;top:40%;
+    left:43%;
+    top:40%;
     width:80px;height:80px;
     border-style:solid;
     border: 5px solid black;
