@@ -55,17 +55,25 @@ export default class Store extends Component {
   async componentDidMount() {
     try {
       this.setState({ isLoading : true })
-       await Bridge.getStores(result=>{
+      await this.commonFunction()
+      this.setState({ isLoading :false })
+    } catch (error) {
+      console.log(error)
+    }
+  };
+
+
+  commonFunction=async()=>{
+    try {
+      await Bridge.getStores(result=>{
         if (result.status === 200) {
           this.setState({ storeData: result.data })
         } else{
           swal(result.message)
         }
-        this.setState({ isLoading :false })
-      });
-
+       });
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
   }
 
@@ -167,7 +175,7 @@ export default class Store extends Component {
       };
       this.setState({ isLoading : true })
       const formdata = { name: name, address: address }
-      await Bridge.addStore(formdata,result=>{
+      await Bridge.addStore(formdata,async result=>{
 
         if (result.status === 200) {
          this.setState({
@@ -175,7 +183,8 @@ export default class Store extends Component {
             name: '',
             address:''
           })
-          swal('Store added successfully')
+          swal('Store added successfully');
+          await this.commonFunction();
         } else{
           swal(result.message)
         }
@@ -183,7 +192,6 @@ export default class Store extends Component {
       });
     } catch (error) {
       console.log(error)
-      //TODO: handle error
     }
   }
 
@@ -196,7 +204,7 @@ export default class Store extends Component {
       };
       this.setState({ isLoading : true })
       const formdata = { _id: editId, name: name , address };
-       await Bridge.editStore(formdata,result=>{
+       await Bridge.editStore(formdata,async result=>{
 
         if (result.status === 200) {
           const upadatestoreData = [...this.state.storeData];
@@ -207,7 +215,8 @@ export default class Store extends Component {
             storeButtonState: true,
             address:''
           });
-          swal('Store updated successfully')
+          swal('Store updated successfully');
+          await this.commonFunction()
         }else{
           swal(result.message);
         }

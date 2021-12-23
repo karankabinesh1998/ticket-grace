@@ -66,7 +66,7 @@ export default class UserLogin extends Component {
          localStorage.setItem('roles', JSON.stringify(result.data.roles[0]));
          window.location.href = '/dashboard';
        } else {
-         swal(result.message)
+         swal(result.message);
        }
        this.setState({
         isLoading : false

@@ -247,10 +247,10 @@ export default class Admin extends Component {
     const { firstName, lastName, password, confirmPassword, selectedDepartment, roles, email ,selectedStore , phoneNumber } = this.state;
     const validateEmail = await Validators.emailValidation(email);
 
-    if (Object.keys(selectedStore).length === 0) {
-      swal('Please select the store')
-      return;
-    }
+    // if (Object.keys(selectedStore).length === 0) {
+    //   swal('Please select the store')
+    //   return;
+    // }
     if (!firstName) {
       swal('Please enter the first name')
       return;
@@ -289,7 +289,7 @@ export default class Admin extends Component {
       formdata.firstName = firstName;
       formdata.lastName = lastName;
       formdata.email = email;
-      formdata.store = selectedStore.value;
+      // formdata.store = selectedStore.value;
       formdata.roles = roles;
       formdata.password = password;
       formdata.phoneNumber=phoneNumber;
@@ -324,10 +324,10 @@ export default class Admin extends Component {
   updateAdmin = async () => {
     const { firstName, lastName, password, confirmPassword, selectedDepartment, roles, email, editId, index , phoneNumber , selectedStore } = this.state;
     const validateEmail = await Validators.emailValidation(email);
-    if (Object.keys(selectedStore).length === 0) {
-      swal('Please select the store')
-      return;
-    }
+    // if (Object.keys(selectedStore).length === 0) {
+    //   swal('Please select the store')
+    //   return;
+    // }
     if (!firstName) {
       swal('Please enter the first name')
       return;
@@ -366,7 +366,7 @@ export default class Admin extends Component {
       formdata.firstName = firstName;
       formdata.lastName = lastName;
       formdata.email = email;
-      formdata.store = selectedStore.value;
+      // formdata.store = selectedStore.value;
       formdata.roles = roles;
       formdata._id = editId;
       formdata.phoneNumber=phoneNumber;
@@ -417,7 +417,7 @@ export default class Admin extends Component {
 
                     <div class="card-body">
 
-                     <div className="row form-group">
+                     {/* <div className="row form-group">
                         <div className="col-sm-2"></div>
                         <div className="col-sm-2">
                           <label class="labell2">Select Store</label>
@@ -430,7 +430,7 @@ export default class Admin extends Component {
                           />
                         </div>
                         <div className="col-sm-3"></div>
-                      </div>
+                      </div> */}
 
                       <div className="row form-group">
                         <div className="col-sm-2"></div>

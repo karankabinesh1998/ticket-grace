@@ -6,6 +6,8 @@ import '../commonStyle.css';
 import moment from 'moment';
 import ModelWindow from '../../Components/Model';
 import Loader from '../../Components/Loader/Loader';
+import { CSVLink, CSVDownload } from "react-csv";
+
 
 export default class EvaluationHistory extends Component {
   constructor(props) {
@@ -15,37 +17,28 @@ export default class EvaluationHistory extends Component {
       workerObject: {},
       ticketsData: [],
       editId: null,
+      csvData : [],
       column: [
         {
-          Header: "Title",
-          accessor: "title",
-          Cell: (d) => <p>{d.original?.ticketId?.title}</p>,
-        },
-        {
-          Header: "Worker",
-          accessor: "worker",
-          Cell: (d) =><p>{d.original?.ticketId?.assignedTo?.firstName}</p>,
-        },
-        {
           Header: "Store",
-          accessor: "store",
-          Cell: (d) =><p>{d.original?.ticketId?.store?.name}</p>,
+          accessor: "id",
+          Cell: (d) =><p>{d.original?.store?.name}</p>,
         },
         {
-          Header: "Department",
-          accessor: "department",
-          Cell: (d) =><p>{d.original?.ticketId?.department?.name}</p>,
-        },
-        {
-          Header: "Score By",
-          accessor: "createdBy",
-          Cell: (d) => <p>{d.original?.createdBy?.firstName}</p>
+          Header: "Manager",
+          accessor: "id",
+          Cell: (d) =><p>{d.original?.manager?.firstName}</p>,
         },
         {
           Header: "Score",
           accessor: "scores",
           Cell:(d)=><p>{d.original?.scores ? this.evaluateScore(d.original?.scores) : 0 }</p>
          },
+        {
+          Header: "Evaluated By",
+          accessor: "createdBy",
+          Cell: (d) => <p>{d.original?.createdBy?.firstName}</p>
+        },
          {
            Header:"UpdatedAt",
            accessor:"updatedAt",
@@ -157,7 +150,7 @@ export default class EvaluationHistory extends Component {
           if (willDelete) {
             const result = await Bridge.closeAssignTicket({ _id: this.state.editId });
             if (result.status === 200) {
-              await this.getTickets();
+              await this.getEvaluation();
 
               this.setState({
                 closeDescription: '',
@@ -187,20 +180,32 @@ export default class EvaluationHistory extends Component {
   async componentDidMount() {
     try {
       this.setState({ isLoading:true })
-      await this.getTickets();
+      await this.getEvaluation();
       this.setState({ isLoading:false })
     } catch (error) {
       console.log(error);
     }
   };
 
-  getTickets = async () => {
+  getEvaluation = async () => {
     try {
         await Bridge.getEvaluation(null,getEvaluation=>{
 
          if(getEvaluation.status===200){
+           let csvData = [];
+           getEvaluation.data.map((data)=>{
+             let arr = [
+               data?.store?.name,
+               data?.manager?.firstName,
+               Object.values(data?.scores)?.reduce?.((acc, a) => acc + a, 0),
+               data?.createdBy?.firstName,
+               moment(data?.updatedAt)?.format("MMM Do YY, h:mm a")
+             ];
+             csvData.push(arr);
+           })
              this.setState({
-               ticketsData: getEvaluation.data
+               ticketsData: getEvaluation.data,
+               csvData
              })
          }else{
            swal(getEvaluation.message)
@@ -314,6 +319,13 @@ export default class EvaluationHistory extends Component {
                       <h3>Performance Evaluation History</h3>
                     </div>
                     <div class="card-body">
+                    <CSVLink 
+                    data={[["Store", "Manager", "Score","Evaluated By","Updated At"],...this.state.csvData]}
+                    className="btn btn-primary"
+                    filename={`grace-perf-${moment().format("YYYYMMDDhhmmss")}.csv`}
+                    >Download Report</CSVLink>
+                    <br/>
+                    <br/>
                       <div className="row form-group">
                         <div className="col-sm-12">
                           {this.state.ticketsData.length ? (

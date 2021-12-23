@@ -49,12 +49,6 @@ export default class AudioRecorder extends Component {
             }).catch((e) => console.log(e));
     };
 
-    // UNSAFE_componentWillReceiveProps(props){
-    //     this.setState({
-    //         blobURL:props?.audioFile
-    //     })
-    // }
-
     render() {
         const { buttonName } = this.state;
         return (

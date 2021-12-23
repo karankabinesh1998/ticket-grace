@@ -327,11 +327,11 @@ export default class Vendor extends Component {
             selectedDepartment: {},
           });
           await this.commonFunction();
-          this.setState({ isLoading: false })
           swal('Vendor added successfully');
         } else {
           swal(result.message);
         }
+        this.setState({ isLoading: false })
       });
     } catch (error) {
       console.log(error)

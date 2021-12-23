@@ -16,63 +16,55 @@ export default class Evaluation extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      ticketObject: {},
-      workerObject: {},
+      storeObject: {},
+      storeManagerObject: {},
       ticketsData: [],
-      evaluateTicketId:null,
+      evaluateTicketId: null,
       editId: null,
-      currentRating:0,
-      isLoading:false,
+      currentRating: 0,
+      isLoading: false,
       OptionsList: [
         { label: 'Good', value: 2 },
         { label: 'Fair', value: 1 },
         { label: 'Not Satisfactory', value: 0 },
       ],
-      scoreObject:{
-        customer_service : null,
-        merchandising_product_display:null,
-        stock_check : null,
-        store_maintainance :null,
-        employee_management:null,
-        downline_development:null  
+      scoreObject: {
+        customer_service: null,
+        merchandising_product_display: null,
+        stock_check: null,
+        store_maintainance: null,
+        employee_management: null,
+        downline_development: null
       },
+      submitButtonStatus:true,
       column: [
         {
           Header: "Store",
           accessor: "store",
-          Cell: (d) => this.storeColumn(d),
+          Cell: (d) => this.storeViewButton(d),
         },
         {
-          Header: "Department",
-          accessor: "department.name",
-          Cell: (d) => this.departmentColumn(d),
+          Header: "Manager Name",
+          accessor: "firstName",
+          Cell: (d) => this.storeManagerViewButton(d)
         },
-        {
-          Header: "Ticket",
-          accessor: "title",
-          Cell: (d) => this.ticketViewButton(d)
-        },
-        {
-          Header: "Assigned To",
-          accessor: "title",
-          Cell: (d) => this.workerViewButton(d)
-        },
-        {
-          Header: "Closed AT",
-          accessor: "closeAt",
-          Cell: (d) => <p>{moment(d.original.createdAt).format('MMM Do YY, h:mm a')}</p>
-        },
-        {
-          Header: "Closed By",
-          accessor: "closeBt",
-          Cell: (d) => <p>{d.original?.closedBy?.firstName}</p>
-        },
+        // {
+        //   Header: "Created At",
+        //   accessor: "createdAt",
+        //   Cell: (d) => <p>{moment(d.original?.store?.createdAt).format('MMM Do YY, h:mm a')}</p>
+        // },
+        // {
+        //   Header: "Created By",
+        //   accessor: "createdBy",
+        //   Cell: (d) => <p>{d.original?.store?.createdBy}</p>
+        // },
         {
           Header: "Evaluation",
           accessor: "closeBy",
           Cell: (d) => this.evaluationButton(d)
         }
-      ]
+      ],
+      roles: []
     }
   };
 
@@ -86,57 +78,54 @@ export default class Evaluation extends Component {
           data-target="#evaluateTicket"
           onClick={() => this.viewEvaluateModel(d)}
         >
-        Remarks
+          Remarks
         </button>
       </center>
     )
   };
 
-  viewEvaluateModel=async(d)=>{
+  viewEvaluateModel = async (d) => {
     this.setState({
-      evaluateTicketId : d.original._id
+      evaluateTicketId: d.original?.store?._id
     })
   };
 
 
-  EvaluatedTicket=async()=>{
-    const { evaluateTicketId , scoreObject } = this.state;
+  EvaluatedTicket = async () => {
+    const { evaluateTicketId, scoreObject } = this.state;
     try {
-      let formdata ={};
+      let formdata = {};
       formdata.scores = scoreObject;
-      formdata.ticketId =evaluateTicketId;
-      const result = await Bridge.postEvaluation(formdata,async result=>{
-
-        if(result.status===200){
+      formdata.store = evaluateTicketId;
+      await Bridge.postEvaluation(formdata, async result => {
+        if (result.status === 200) {
           this.setState({
-            evaluateTicketId : null,
+            evaluateTicketId: null,
           });
-          await this.getTickets();
-          swal("successfully rated the ticket")
-          window.location.reload();
-        }else{
+          swal("successfully evaluated the store")
+          await this.getEvaluationSore();
+          window.location.href="/performance-evaluation-history";
+        } else {
           swal(result.message);
-          window.location.reload();
         }
       });
     } catch (error) {
       console.log(error);
     }
-
   }
 
 
-  ticketViewButton = (d) => {
+  storeViewButton = (d) => {
     return (
       <center>
         <button
           type="button"
           className="btn btn-info"
           data-toggle="modal"
-          data-target="#openTicket"
+          data-target="#openStore"
           onClick={() => this.viewTicketModel(d)}
         >
-          {d.original.title}
+          {d.original?.store?.name}
         </button>
       </center>
     )
@@ -144,22 +133,22 @@ export default class Evaluation extends Component {
 
   viewTicketModel = async (e) => {
     this.setState({
-      ticketObject: e.original,
-      workerObject: e.original.assignedTo
+      storeObject: e.original?.store,
+      storeManagerObject: e.original
     })
-  }
+  };
 
-  workerViewButton = (d) => {
+  storeManagerViewButton = (d) => {
     return (
       <center>
         <button
           type="button"
           className="btn btn-info"
           data-toggle="modal"
-          data-target="#openWorker"
+          data-target="#openStoreManager"
           onClick={() => this.viewTicketModel(d)}
         >
-          {d.original?.assignedTo?.firstName}
+          {d.original?.firstName}
         </button>
       </center>
     )
@@ -168,7 +157,7 @@ export default class Evaluation extends Component {
 
 
   storeColumn = (d) => {
-    return <p>{d.original.store.name}</p>
+    return <p>{d.original?.store?.name}</p>
   }
 
   departmentColumn = (d) => {
@@ -177,17 +166,34 @@ export default class Evaluation extends Component {
 
   async componentDidMount() {
     try {
-      this.setState({ isLoading:true })
-      await this.getTickets();
-      this.setState({ isLoading:false })
+      this.setState({ isLoading: true })
+      await this.getEvaluationSore();
+      this.setState({ isLoading: false })
     } catch (error) {
       console.log(error);
     }
   };
 
-  getTickets = async () => {
+  getEvaluationSore = async () => {
     try {
-      const result = await Bridge.getTicket(`?status=close&isEvaluated=false`, result => {
+      await Bridge.getUserRole(rolesData => {
+
+        if (rolesData.status === 200) {
+          let roles = [];
+          rolesData.data.map(item => {
+            if (item.name == 'store_manager') {
+              roles.push(item._id);
+            }
+            this.setState({
+              roles
+            })
+          })
+        } else {
+          swal(rolesData.message);
+        }
+      });
+
+      await Bridge.getUserData(`?role=${this.state.roles[0]}`, result => {
 
         if (result.status === 200) {
           this.setState({
@@ -205,22 +211,32 @@ export default class Evaluation extends Component {
 
   handleChange = async (e) => { this.setState({ [e.target.name]: e.target.value }) };
 
-  ratingChanged=async(e)=>{ this.setState({ currentRating : e }) };
+  ratingChanged = async (e) => { this.setState({ currentRating: e }) };
 
   handleChangeRadio = async (name, e) => {
     const storedata = { ...this.state.scoreObject };
     storedata[name] = e;
+    let count = 0;
+    for (const property in storedata) {
+      if(storedata[property] !== null ){
+          count = count + 1;
+          if(count == 6){
+            this.setState({
+              submitButtonStatus : false
+            })
+          }
+      }
+    }
     this.setState({
       scoreObject: storedata
     });
-
   }
 
   render() {
-    const { workerObject, ticketObject  , scoreObject } = this.state;
+    const { storeManagerObject, storeObject, scoreObject } = this.state;
     return (
       <React.Fragment>
-        {this.state.isLoading ? <Loader /> : null }
+        {this.state.isLoading ? <Loader /> : null}
         <div class="main-content">
           <ModelWindow
             ButtonTitle={"Evaluate Ticket"}
@@ -228,77 +244,77 @@ export default class Evaluation extends Component {
             id="evaluateTicket"
             indexStyle={{ color: "black", fontWeight: '500' }}
             ButtonBody={
-            <React.Fragment>
+              <React.Fragment>
                 <div className="row form-group">
-                   <div className="col-sm-4">
+                  <div className="col-sm-4">
                     <label class="labelRating">Customer Service*</label>
                   </div>
                   <div className="col-sm-8">
                     <RadioButtonComponent
                       OptionsList={this.state.OptionsList}
-                      handleChangeRadio={this.handleChangeRadio} 
-                      name ={"customer_service"}
-                      />
+                      handleChangeRadio={this.handleChangeRadio}
+                      name={"customer_service"}
+                    />
                   </div>
                 </div>
                 <div className="row form-group">
-                   <div className="col-sm-4">
+                  <div className="col-sm-4">
                     <label class="labelRating">Merchandising-product display*</label>
                   </div>
                   <div className="col-sm-8">
                     <RadioButtonComponent
                       OptionsList={this.state.OptionsList}
-                      handleChangeRadio={this.handleChangeRadio} 
-                      name ={"merchandising_product_display"}
-                      />
+                      handleChangeRadio={this.handleChangeRadio}
+                      name={"merchandising_product_display"}
+                    />
                   </div>
                 </div>
                 <div className="row form-group">
-                   <div className="col-sm-4">
+                  <div className="col-sm-4">
                     <label class="labelRating">Stock Check*</label>
                   </div>
                   <div className="col-sm-8">
                     <RadioButtonComponent
                       OptionsList={this.state.OptionsList}
-                      handleChangeRadio={this.handleChangeRadio} 
-                      name ={"stock_check"}
-                      />
+                      handleChangeRadio={this.handleChangeRadio}
+                      name={"stock_check"}
+                    />
                   </div>
                 </div>
                 <div className="row form-group">
-                   <div className="col-sm-4">
+                  <div className="col-sm-4">
                     <label class="labelRating">Store Maintainance*</label>
                   </div>
                   <div className="col-sm-8">
                     <RadioButtonComponent
                       OptionsList={this.state.OptionsList}
-                      handleChangeRadio={this.handleChangeRadio} 
-                      name ={"store_maintainance"}
-                      />
+                      handleChangeRadio={this.handleChangeRadio}
+                      name={"store_maintainance"}
+                    />
                   </div>
                 </div>
                 <div className="row form-group">
-                   <div className="col-sm-4">
+                  <div className="col-sm-4">
                     <label class="labelRating">Employee Management*</label>
                   </div>
                   <div className="col-sm-8">
                     <RadioButtonComponent
                       OptionsList={this.state.OptionsList}
-                      handleChangeRadio={this.handleChangeRadio} 
-                      name ={"employee_management"}
-                      />
+                      handleChangeRadio={this.handleChangeRadio}
+                      name={"employee_management"}
+                    />
                   </div>
                 </div>
                 <div className="row form-group">
-                   <div className="col-sm-4">
+                  <div className="col-sm-4">
                     <label class="labelRating">Downline Development*</label>
                   </div>
                   <div className="col-sm-8">
                     <RadioButtonComponent
                       OptionsList={this.state.OptionsList}
-                      handleChangeRadio={this.handleChangeRadio} 
-                      name ={"downline_development"}
-                      />
+                      handleChangeRadio={this.handleChangeRadio}
+                      name={"downline_development"}
+                    />
                   </div>
                 </div>
                 <div class="row form-group">
@@ -307,63 +323,38 @@ export default class Evaluation extends Component {
                     <button type="button"
                       style={{ width: '100%' }}
                       onClick={this.EvaluatedTicket}
-                      class="btn btn-success m-t-15 waves-effect">
+                      disabled={this.state.submitButtonStatus}
+                      class={this.state.submitButtonStatus ? "btn btn-secondary m-t-15 waves-effect" : "btn btn-success m-t-15 waves-effect"}>
                       {"Submit"}
                     </button>
                   </div>
                   <div className="col-sm-4"></div>
                 </div>
-            </React.Fragment>
+              </React.Fragment>
             }
           />
-         
+
           <ModelWindow
-            ButtonTitle={"Worker Details"}
-            ButtonName={"Worker Details"}
-            id="openWorker"
+            ButtonTitle={"Store Manager Details"}
+            id="openStoreManager"
             indexStyle={{ color: "black", fontWeight: '500' }}
             ButtonBody={
               <React.Fragment>
-                <p>Name : {workerObject?.firstName} {workerObject?.lastName} </p>
-                <p>Mobile : {workerObject?.phoneNumber} </p>
-                <p>Email-id : {workerObject?.email}</p>
+                <p>Name : {storeManagerObject?.firstName} {storeManagerObject?.lastName} </p>
+                <p>Mobile : {storeManagerObject?.phoneNumber} </p>
+                <p>Email-id : {storeManagerObject?.email}</p>
               </React.Fragment>
             }
           />
           <ModelWindow
-            ButtonTitle={"Ticket Details"}
-            ButtonName={"Ticket Media"}
-            id="openTicket"
+            ButtonTitle={"Store Details"}
+            id="openStore"
             indexStyle={{ color: "black", fontWeight: '500' }}
             ButtonBody={
               <React.Fragment>
-                <p>Title : {ticketObject.title} </p>
-                <p>Description : {ticketObject?.description == 'null' ? 'nil' : ticketObject?.description} </p>
-                <p>Store : {ticketObject?.store?.name} </p>
-                <p>Department : {ticketObject?.department?.name} </p>
-                <p>Close-description : {ticketObject?.closeDescription}</p>
-                <p>Image</p>
-
-                <div className="row form-group">
-                  {ticketObject?.image_1 ? <div className="col-sm-4">
-                    <img src={ticketObject?.image_1} width={100} height={100} />
-                  </div>
-                    : null}
-                  {ticketObject?.image_2 ? <div className="col-sm-4">
-                    <img src={ticketObject?.image_2} width={100} height={100} />
-                  </div>
-                    : null}
-                  {ticketObject?.image_3 ? <div className="col-sm-4">
-                    <img src={ticketObject?.image_3} width={100} height={100} />
-                  </div>
-                    : null}
-                </div>
-                <p>voice</p>
-                <div className="row form-group">
-                  <div className="col-sm-4">
-                    <audio src={ticketObject?.voiceNoteUrl} width={100} height={100} controls="controls" />
-                  </div>
-                </div>
+                <p>Store Name : {storeObject?.name} </p>
+                <p>Address : {storeObject?.address == 'null' ? 'nil' : storeObject?.address} </p>
+                <p>Created At  : {moment(storeObject?.store?.createdAt).format("MMM Do YYYY")} </p>
               </React.Fragment>}
           />
           <section class="section">

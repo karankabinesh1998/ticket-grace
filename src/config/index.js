@@ -1,7 +1,7 @@
 const env = {
-   // ACCESS_POINT: "https://exp.igotaxy.in/api",
-   ACCESS_POINT:"http://localhost:3002/api",
-   // ACCESS_POINT:"https://0835-2405-201-e03a-d011-cc05-2046-903b-fdc3.ngrok.io/api"
+   ACCESS_POINT: "http://3.134.82.175:3001/api",
+   // ACCESS_POINT:"http://localhost:3002/api",    
+   // ACCESS_POINT:"https://1efb-2405-201-e03a-d829-2dd3-6afc-d905-315d.ngrok.io/api"
   };
   
   module.exports = env;

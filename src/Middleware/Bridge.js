@@ -3,6 +3,13 @@ import http from "./http";
 const Authorization = localStorage.getItem('token');
 const roles = localStorage.getItem('roles') !== null ? JSON.parse(localStorage.getItem('roles')) : null;
 
+const userCheck = async () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('userDetail');
+  localStorage.removeItem('roles');
+  window.location.href = '/';
+};
+
 ///User
 
 const userLogin = async (formdata, callback) => {
@@ -16,7 +23,7 @@ const userLogin = async (formdata, callback) => {
   })
     .catch(function (error) {
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" ? error.response.data?.error ? error.response.data?.error : "General server error" : "General server error" })
       }
     })
 }
@@ -40,8 +47,11 @@ const getUserRole = async (callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -56,8 +66,11 @@ const addUserRole = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -72,8 +85,11 @@ const updateUserRole = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -89,8 +105,11 @@ const deleteUser = async (formdata, callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -105,31 +124,52 @@ const getUserData = async (roleId='',callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
 
-const getProfile = async () => {
+const getProfile = async (callback) => {
   const result = await http.get(ACCESS_POINT + `/user/profile`, {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': Authorization
     },
-  });
-  return result;
+  }).then(async (response) => {
+    callback(response);
+  })
+    .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
+      if (error.response) {
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
+      }
+    })
 };
 
-const updateProfile = async (formdata) => {
+const updateProfile = async (formdata,callback) => {
   const result = await http.patch(ACCESS_POINT + `/user/profile`, formdata, {
     headers: {
       'Content-Type': 'multipart/form-data',
       'Authorization': Authorization
     },
-  });
-  return result;
-}
+  }).then(async (response) => {
+    callback(response);
+  })
+    .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
+      if (error.response) {
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
+      }
+    })
+};
 
 //Department
 
@@ -143,8 +183,11 @@ const addDepartment = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -158,8 +201,11 @@ const getDepartments = async (callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -174,8 +220,11 @@ const editDepartment = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -191,8 +240,11 @@ const deleteDepartment = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -208,8 +260,11 @@ const getStores = async (callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -224,8 +279,11 @@ const addStore = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -240,8 +298,11 @@ const editStore = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -257,8 +318,11 @@ const deleteStore = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -275,8 +339,11 @@ const getWorker = async (query=null,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -291,8 +358,11 @@ const addWorker = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -307,8 +377,11 @@ const editWorker = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -324,8 +397,11 @@ const deleteWorker = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -342,8 +418,11 @@ const addTicket = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -358,8 +437,11 @@ const assignTicket = async (formdata, callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -374,8 +456,11 @@ const cancelAssignTicket = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -390,8 +475,11 @@ const cancelClosedTicket = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -406,8 +494,11 @@ const closeAssignTicket = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -421,8 +512,11 @@ const getTicket = async (query = null, callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -438,8 +532,11 @@ const deleteTicket = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -454,8 +551,11 @@ const getEvaluation = async (query=null,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -470,8 +570,11 @@ const postEvaluation = async (formdata,callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }
@@ -486,8 +589,11 @@ const getDashboard = async (callback) => {
     callback(response);
   })
     .catch(function (error) {
+      if(error.response.status===401){
+        userCheck();
+      }
       if (error.response) {
-        callback({ status: error.response.status, message: error.response.data?.error })
+        callback({ status: error.response.status, message: error.response.data?.error ? error.response.data?.error : "General server error" })
       }
     })
 }

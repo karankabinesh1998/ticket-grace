@@ -99,25 +99,29 @@ export default class Profile extends Component {
         isLoading:true
       })
 
-      const result = await Bridge.updateProfile(formdata);
+      const result = await Bridge.updateProfile(formdata,async result=>{
 
-      if(result.status===200){
-        this.setState({
-          currentPassword:'',
-          password:"",
-          confirmPassword:"",
-          profileImage:null,
-          profileImagePreview:null
-        })
-        await this.commonFunction();
-        let setLocal = this.state.userDetail;
-        setLocal.profileImageUrl = result?.data?.profileImageUrl;
-        localStorage.setItem("userDetail",JSON.stringify(setLocal));
-        this.setState({
-          isLoading:false
-        })
-        swal("Profile updated successfully");
-      }
+        if(result.status===200){
+          this.setState({
+            currentPassword:'',
+            password:"",
+            confirmPassword:"",
+            profileImage:null,
+            profileImagePreview:null
+          })
+          await this.commonFunction();
+          let setLocal = this.state.userDetail;
+          setLocal.profileImageUrl = result?.data?.profileImageUrl;
+          localStorage.setItem("userDetail",JSON.stringify(setLocal));
+          this.setState({
+            isLoading:false
+          })
+          swal("Profile updated successfully");
+        }else{
+          swal(result.message);
+        }
+      })
+
       
     } catch (error) {
       console.log(error);
@@ -137,21 +141,24 @@ export default class Profile extends Component {
     }
 }
 
-  commonFunction=async()=>{
+  commonFunction = async () => {
     try {
-      const result = await Bridge.getProfile();
-      if(result.status===200){
-        if(result?.data){
-          this.setState({
-            firstName:result?.data?.firstName,
-            lastName:result?.data?.lastName,
-            phoneNumber:result?.data?.phoneNumber,
-            email:result?.data?.email,
-            userDetail:result?.data,
-            profileImage:null
-          })
+      await Bridge.getProfile(result => {
+        if (result.status === 200) {
+          if (result?.data) {
+            this.setState({
+              firstName: result?.data?.firstName,
+              lastName: result?.data?.lastName,
+              phoneNumber: result?.data?.phoneNumber,
+              email: result?.data?.email,
+              userDetail: result?.data,
+              profileImage: null
+            })
+          }
+        } else {
+          swal(result.message);
         }
-      }
+      })
     } catch (error) {
       console.log(error);
     }

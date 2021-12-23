@@ -52,19 +52,23 @@ export default class Departments extends Component {
       this.setState({
         isLoading: true
       })
-      await Bridge.getDepartments(result => {
-        if (result.status === 200) {
-          this.setState({ departmentsData: result.data })
-        } else {
-          swal(result.message)
-        }
-        this.setState({
-          isLoading: false
-        })
-      });
+      await this.commonFunction();
+      this.setState({
+        isLoading: false
+      })
     } catch (error) {
       console.log(error)
     }
+  };
+
+  commonFunction=async()=>{
+    await Bridge.getDepartments(result => {
+      if (result.status === 200) {
+        this.setState({ departmentsData: result.data })
+      } else {
+        swal(result.message)
+      }
+    });
   }
 
   editDepartment = (d) => {
@@ -159,8 +163,8 @@ export default class Departments extends Component {
       const formdata = { name: name }
       this.setState({
         isLoading: true
-      })
-      await Bridge.addDepartment(formdata, result => {
+      });
+      await Bridge.addDepartment(formdata,async result => {
         if (result.status === 200) {
           let insertDepartment = result.data;
           const AppendDepartment = [insertDepartment, ...this.state.departmentsData];
@@ -168,20 +172,21 @@ export default class Departments extends Component {
             departmentsData: AppendDepartment,
             name: '',
             errorName: ''
-          })
-          swal('Department added successfully')
+          });
+          swal('Department added successfully');
+          await this.commonFunction();
         } else {
           swal(result.message)
-        }
+        };
         this.setState({
-          isLoading: true
+          isLoading: false
         })
       });
     } catch (error) {
       console.log(error)
       //TODO: handle error
     }
-  }
+  };
 
   updateDepartment = async () => {
     try {
@@ -194,7 +199,7 @@ export default class Departments extends Component {
       this.setState({
         isLoading: true
       })
-      await Bridge.editDepartment(formdata, result => {
+      await Bridge.editDepartment(formdata,async result => {
         if (result.status === 200) {
           const upadateDepartment = [...this.state.departmentsData];
           upadateDepartment[index].name = result.data.name;
@@ -204,6 +209,7 @@ export default class Departments extends Component {
             DepartmentButtonState: true,
           });
           swal('Department updated successfully')
+          await this.commonFunction();
         } else {
           swal(result.message);
         }
@@ -244,6 +250,7 @@ export default class Departments extends Component {
                             placeholder="Enter the name"
                             onChange={this.handleChange}
                             value={this.state.name}
+                            autoComplete='off'
                             name="name" />
                         </div>
                         <div className="col-sm-3"> <span class="errormsg">{this.state.errorName}</span> </div>
