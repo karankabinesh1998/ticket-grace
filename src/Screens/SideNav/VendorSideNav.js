@@ -1,10 +1,7 @@
 import React from 'react';
 import './side.css';
 import { AiOutlineDashboard, AiOutlineFolderAdd } from 'react-icons/ai';
-import { HiOutlineOfficeBuilding } from 'react-icons/hi';
 import { TiTicket } from 'react-icons/ti';
-import { BsGraphUp } from 'react-icons/bs';
-import { MdOutlineLocalGroceryStore } from 'react-icons/md';
 
 export default function VendorSideNav() {
   return (
@@ -43,14 +40,14 @@ export default function VendorSideNav() {
               <li><a class="nav-link" href="/tickets-history">Tickets History</a></li>
             </ul>
           </li>
-          <li class="dropdown">
+          {/* <li class="dropdown">
             <a href="#" class="menu-toggle nav-link has-dropdown"><BsGraphUp size={24} style={{ width: '20px', color: 'black' }} />
               <span class="Sidenav">
                 Performance Evaluation </span></a>
             <ul class="dropdown-menu">
               <li><a class="nav-link" href="/performance-evaluation-history">Evaluation History</a></li>
             </ul>
-          </li>
+          </li> */}
         </ul>
       </aside>
     </div>
